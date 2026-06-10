@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "DotNetAuditTool.Core": {
+      "commandName": "Project"
+    },
+    "Профиль 1": {
+      "commandName": "Project"
+    }
+  }
+}

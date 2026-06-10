@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "DotNetAuditTool.CLI": {
+      "commandName": "Project",
+      "commandLineArgs": "DotNetAuditTool"
+    },
+    "WSL": {
+      "commandName": "WSL2",
+      "distributionName": ""
+    }
+  }
+}

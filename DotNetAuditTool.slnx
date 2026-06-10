@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="DotNetAuditTool.CLI/DotNetAuditTool.CLI.csproj" />
+  <Project Path="DotNetAuditTool.Core/DotNetAuditTool.Core.csproj" />
+  <Project Path="DotNetAuditTool.DependencyGraph/DotNetAuditTool.DependencyGraphBuilder.csproj" />
+  <Project Path="DotNetAuditTool.Secrets/DotNetAuditTool.Secrets.csproj" />
+  <Project Path="DotNetAuditTool.Security/DotNetAuditTool.Security.csproj" />
+  <Project Path="DotNetAuditTool.VersionChecker/DotNetAuditTool.VersionChecker.csproj" />
+</Solution>
