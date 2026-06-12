@@ -2,7 +2,7 @@
   "profiles": {
     "DotNetAuditTool.CLI": {
       "commandName": "Project",
-      "commandLineArgs": "DotNetAuditTool"
+      "commandLineArgs": "analyze D:\\Projects\\DotNetAuditTool\\DotNetAuditTool.slnx"
     },
     "WSL": {
       "commandName": "WSL2",

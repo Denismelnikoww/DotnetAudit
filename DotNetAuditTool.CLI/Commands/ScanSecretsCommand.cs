@@ -11,6 +11,16 @@ public static class ScanSecretsCommand
         var command = new Command("scan-secrets", "Search for secrets and sensitive data in code");
 
         var pathArg = new Argument<string>("path", "Path to file or directory to scan");
+        pathArg.AddValidator(result =>
+        {
+            var pathVal = result.GetValueOrDefault<string>();
+            var path = !string.IsNullOrWhiteSpace(pathVal) ? pathVal : Environment.CurrentDirectory;
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                result.ErrorMessage = "Path cannot be empty.";
+            }
+            // Optionally, validate if the path exists here if desired
+        });
         var entropyThresholdOption = new Option<double>(["--entropy-threshold", "-e"],
             () => 4.5, "Entropy threshold for detection (0-8)");
         var outputOption = new Option<string>(["--output", "-o"], "Output file for results");
@@ -21,6 +31,12 @@ public static class ScanSecretsCommand
 
         command.SetHandler(async (string path, double entropyThreshold, string? output) =>
         {
+            // Use current directory if path is empty or whitespace
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                path = Environment.CurrentDirectory;
+            }
+
             var console = new ConsoleOutputService();
             console.WriteHeader($"Scanning for secrets in: {path}");
 

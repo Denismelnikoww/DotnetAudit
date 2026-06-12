@@ -3,6 +3,7 @@ using DotNetAuditTool.Core.Models;
 using DotNetAuditTool.DependencyGraphBuilder;
 using Spectre.Console;
 using System.CommandLine;
+using System.IO;
 
 namespace DotNetAuditTool.CLI.Commands;
 
@@ -12,7 +13,9 @@ public static class GraphCommand
     {
         var command = new Command("graph", "Build and visualize dependency graph");
 
-        var pathArg = new Argument<string>("path", "Path to .csproj, .sln file or directory");
+        var pathArg = new Argument<string>("path", () => ".",
+            "Path to .csproj, .sln file or directory (defaults to current directory)");
+
         var formatOption = new Option<string>(["--format", "-f"], () => "console",
             "Output format: console, mermaid, json");
         var outputOption = new Option<string>(["--output", "-o"], "Output file path");
@@ -24,12 +27,16 @@ public static class GraphCommand
         command.SetHandler(async (string path, string format, string? output) =>
         {
             var console = new ConsoleOutputService();
-            console.WriteHeader($"Building dependency graph for: {path}");
+
+            // Получаем полный путь (относительный -> абсолютный)
+            var fullPath = Path.GetFullPath(path);
+
+            console.WriteHeader($"Building dependency graph for: {fullPath}");
 
             try
             {
                 var analyzer = new DependencyAnalyzer();
-                var graph = await analyzer.AnalyzeAsync(path);
+                var graph = await analyzer.AnalyzeAsync(fullPath);
 
                 console.WriteSuccess($"Built graph with {graph.Nodes.Count} nodes and {graph.Edges.Count} edges");
 
@@ -93,7 +100,7 @@ public static class GraphCommand
                         table.AddRow(
                             node.Name,
                             node.Type.ToString(),
-                            node.Version,
+                            node.Version ?? "N/A",
                             deps.Count.ToString()
                         );
                     }
@@ -127,12 +134,33 @@ public static class GraphCommand
 
             if (sourceNode != null && targetNode != null)
             {
-                var sourceLabel = sourceNode.Name.Replace(" ", "_").Replace(".", "_");
-                var targetLabel = targetNode.Name.Replace(" ", "_").Replace(".", "_");
-                mermaid += $"    {sourceLabel}[{sourceNode.Name}] --> {targetLabel}[{targetNode.Name}]\n";
+                var sourceLabel = SanitizeMermaidLabel(sourceNode.Name);
+                var targetLabel = SanitizeMermaidLabel(targetNode.Name);
+                mermaid += $"    {sourceLabel}[{EscapeMermaidText(sourceNode.Name)}] --> {targetLabel}[{EscapeMermaidText(targetNode.Name)}]\n";
             }
         }
 
         return mermaid;
+    }
+
+    private static string SanitizeMermaidLabel(string name)
+    {
+        // Заменяем проблемные символы для ID узлов
+        return name
+            .Replace(' ', '_')
+            .Replace('.', '_')
+            .Replace('-', '_')
+            .Replace('/', '_')
+            .Replace('\\', '_');
+    }
+
+    private static string EscapeMermaidText(string text)
+    {
+        // Экранируем проблемные символы в тексте узла
+        return text
+            .Replace("[", "\\[")
+            .Replace("]", "\\]")
+            .Replace("(", "\\(")
+            .Replace(")", "\\)");
     }
 }

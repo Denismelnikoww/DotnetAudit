@@ -13,6 +13,16 @@ public static class CheckVersionsCommand
         var command = new Command("check-versions", "Check for outdated packages and version compatibility");
 
         var pathArg = new Argument<string>("path", "Path to .csproj, .sln file or directory");
+        pathArg.AddValidator(result =>
+        {
+            var pathVal = result.GetValueOrDefault<string>();
+            var path = !string.IsNullOrWhiteSpace(pathVal) ? pathVal : Environment.CurrentDirectory;
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                result.ErrorMessage = "Path cannot be empty.";
+            }
+            // Optionally, validate if the path exists here if desired
+        });
         var fixOption = new Option<bool>(["--fix", "-f"], "Generate update scripts");
 
         command.AddArgument(pathArg);
@@ -20,6 +30,12 @@ public static class CheckVersionsCommand
 
         command.SetHandler(async (string path, bool fix) =>
         {
+            // Use current directory if path is empty or whitespace
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                path = Environment.CurrentDirectory;
+            }
+
             var console = new ConsoleOutputService();
             console.WriteHeader($"Checking versions for: {path}");
 

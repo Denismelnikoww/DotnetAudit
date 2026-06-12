@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Spectre.Console;
+﻿using Spectre.Console;
 using DotNetAuditTool.Core.Models;
 
 namespace DotNetAuditTool.CLI.Services;
@@ -224,13 +221,13 @@ public class ConsoleOutputService
     public void WriteBanner()
     {
         var banner = @"
-   ________        __           __          __      __ 
-  /_  __/ /_  ___/ /__  ____  / /   ____  / /_  __/ /_
-   / / / __ \/ _  / _ \/ __ \/ /   / __ \/ / / / / __/
-  / / / / / /  __/  __/ / / / /___/ /_/ / / /_/ / /_  
- /_/ /_/ /_/\___/\___/_/ /_/_____/\____/_/\__,_/\__/  
-                                                       
-[blue].NET Audit Tool v1.0[/] - Comprehensive Security & Dependency Scanner
+  ____      U  ___ u _____   _   _   U _____ u  _____      _       _   _   ____              _____   
+ |  _""\      \/""_ \/|_ "" _| | \ |""|  \| ___""|/ |_ "" _| U  /""\  uU |""|u| | |  _""\    ___     |_ "" _|
+/| | | |     | | | |  | |  <|  \| |>  |  _|""     | |    \/ _ \/  \| |\| |/| | | |  |_""_|      | |
+U| |_| |\.-,_| |_| | /| |\ U| |\  |u  | |___    /| |\   / ___ \   | |_| |U| |_| |\  | |      /| |\
+ |____/ u \_)-\___/ u |_|U  |_| \_|   |_____|  u |_|U  /_/   \_\ <<\___/  |____/ uU/| |\u   u |_|U
+  |||_         \\   _// \\_ ||   \\,-.<<   >>  _// \\_  \\    >>(__) )(    |||_.-,_|___|_,-._// \\_
+ (__)_)       (__) (__) (__)(_"")  (_/(__) (__)(__) (__)(__)  (__)   (__)  (__)_)\_)-' '-(_/(__) (__)
 ";
         AnsiConsole.Write(new Panel(banner)
         {

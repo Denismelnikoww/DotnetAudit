@@ -16,6 +16,16 @@ public static class AnalyzeCommand
         var command = new Command("analyze", "Perform complete audit of .NET project");
 
         var pathArg = new Argument<string>("path", "Path to .csproj, .sln file or directory");
+        pathArg.AddValidator(result =>
+        {
+            var pathVal = result.GetValueOrDefault<string>();
+            var path = !string.IsNullOrWhiteSpace(pathVal) ? pathVal : Environment.CurrentDirectory;
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                result.ErrorMessage = "Path cannot be empty.";
+            }
+        });
+
         var outputOption = new Option<string>(["--output", "-o"], () => "audit-report.json", "Output file path for JSON report");
         var verboseOption = new Option<bool>(["--verbose", "-v"], "Enable verbose output");
 
@@ -25,6 +35,12 @@ public static class AnalyzeCommand
 
         command.SetHandler(async (string path, string output, bool verbose) =>
         {
+            // Use current directory if path is empty or whitespace
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                path = Environment.CurrentDirectory;
+            }
+
             var console = new ConsoleOutputService();
             console.WriteBanner();
             console.WriteHeader($"Auditing: {path}");

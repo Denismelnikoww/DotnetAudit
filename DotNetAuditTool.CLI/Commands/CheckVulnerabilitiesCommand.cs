@@ -13,6 +13,16 @@ public static class CheckVulnerabilitiesCommand
         var command = new Command("check-vulns", "Check for security vulnerabilities in packages");
 
         var pathArg = new Argument<string>("path", "Path to .csproj, .sln file or directory");
+        pathArg.AddValidator(result =>
+        {
+            var pathVal = result.GetValueOrDefault<string>();
+            var path = !string.IsNullOrWhiteSpace(pathVal) ? pathVal : Environment.CurrentDirectory;
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                result.ErrorMessage = "Path cannot be empty.";
+            }
+            // Optionally, validate if the path exists here if desired
+        });
         var githubTokenOption = new Option<string>(["--github-token", "-t"],
             "GitHub token for advisory API (optional)");
 
@@ -21,6 +31,12 @@ public static class CheckVulnerabilitiesCommand
 
         command.SetHandler(async (string path, string? githubToken) =>
         {
+            // Use current directory if path is empty or whitespace
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                path = Environment.CurrentDirectory;
+            }
+
             var console = new ConsoleOutputService();
             console.WriteHeader($"Checking vulnerabilities for: {path}");
 
