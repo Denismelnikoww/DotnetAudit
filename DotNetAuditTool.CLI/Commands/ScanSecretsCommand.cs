@@ -66,7 +66,7 @@ public static class ScanSecretsCommand
 
                 if (!string.IsNullOrEmpty(output))
                 {
-                    IReportWriter<SecretScanResult> reportWriter = ReportWriterFactory.CreateJson<SecretScanResult>();
+                    IReportWriter<SecretScanResult> reportWriter = ReportWriterFactory.CreateByExtension<SecretScanResult>(output);
                     await reportWriter.WriteAsync(result, output);
                     console.WriteSuccess($"Results saved to {output}");
                 }

@@ -68,17 +68,26 @@ public static class GraphCommand
                 }
                 else if (format == "json")
                 {
-                    IReportWriter<DependencyGraph> reportWriter = ReportWriterFactory.CreateJson<DependencyGraph>();
-                    var json = reportWriter.Serialize(graph);
+                    IReportWriter<DependencyGraph> reportWriter;
+                    if (!string.IsNullOrEmpty(output))
+                    {
+                        reportWriter = ReportWriterFactory.CreateByExtension<DependencyGraph>(output);
+                    }
+                    else
+                    {
+                        reportWriter = ReportWriterFactory.CreateJson<DependencyGraph>();
+                    }
+
+                    var serializedGraph = reportWriter.Serialize(graph);
 
                     if (!string.IsNullOrEmpty(output))
                     {
                         await reportWriter.WriteAsync(graph, output);
-                        console.WriteSuccess($"JSON graph saved to {output}");
+                        console.WriteSuccess($"Graph saved to {output}");
                     }
                     else
                     {
-                        Console.WriteLine(json);
+                        Console.WriteLine(serializedGraph);
                     }
                 }
                 else

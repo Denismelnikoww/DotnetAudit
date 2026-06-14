@@ -147,7 +147,7 @@ public static class AnalyzeCommand
                 // 9. Save JSON report
                 if (!string.IsNullOrEmpty(output))
                 {
-                    IReportWriter<AuditReport> reportWriter = ReportWriterFactory.CreateJson<AuditReport>();
+                    IReportWriter<AuditReport> reportWriter = ReportWriterFactory.CreateByExtension<AuditReport>(output);
                     await reportWriter.WriteAsync(report, output);
                     console.WriteSuccess($"Report saved to {output}");
                 }

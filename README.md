@@ -9,7 +9,7 @@
   - проверка совместимости версий пакетов
   - сканирование на уязвимости
   - поиск секретов
-  - генерация JSON-отчёта
+  - генерация JSON или XML отчёта по расширению файла
 - `graph` — построение и экспорт графа зависимостей
   - вывод в консоль
   - экспорт в Mermaid
@@ -40,7 +40,7 @@ dotnet run --project DotNetAuditTool.CLI -- analyze <path> [--output|-o <file>] 
 - `<path>` — путь к `.csproj`, `.sln`, `.slnx` или директории.
 
 Опции:
-- `--output`, `-o` — путь к файлу для сохранения JSON-отчёта (по умолчанию `audit-report.json`).
+- `--output`, `-o` — путь к файлу для сохранения отчёта. Формат определяется по расширению: `.json` или `.xml`.
 - `--verbose`, `-v` — вывод подробных таблиц по уязвимостям, устаревшим пакетам и секретам.
 
 Пример:
@@ -49,9 +49,16 @@ dotnet run --project DotNetAuditTool.CLI -- analyze <path> [--output|-o <file>] 
 dotnet run --project DotNetAuditTool.CLI -- analyze "D:\Projects\DotNetAuditTool" --output audit-report.json --verbose
 ```
 
+Пример HTML-отчёта:
+
+```powershell
+dotnet run --project DotNetAuditTool.CLI -- analyze "D:\Projects\DotNetAuditTool" --output audit-report.html
+```
+
 Примечания:
 - Анализатор строит граф зависимостей и сканирует все проекты, которые он находит.
 - Сгенерированный файл отчёта автоматически игнорируется при сканировании секретов, чтобы он сам себя не сканировал.
+- Формат отчёта и репортера для `analyze` определяется расширением выходного файла: `.json` или `.xml`.
 
 ### `graph`
 
@@ -143,7 +150,7 @@ dotnet run --project DotNetAuditTool.CLI -- scan-secrets <path> [--entropy-thres
 
 Опции:
 - `--entropy-threshold`, `-e` — порог энтропии для обнаружения (по умолчанию `4.5`).
-- `--output`, `-o` — путь к файлу для сохранения JSON-результатов.
+- `--output`, `-o` — путь к файлу для сохранения результатов. Формат выбирается по расширению: `.json` или `.xml`.
 
 Примеры:
 
@@ -151,4 +158,6 @@ dotnet run --project DotNetAuditTool.CLI -- scan-secrets <path> [--entropy-thres
 dotnet run --project DotNetAuditTool.CLI -- scan-secrets "D:\Projects\DotNetAuditTool"
 
 dotnet run --project DotNetAuditTool.CLI -- scan-secrets "D:\Projects\DotNetAuditTool" --entropy-threshold 5.0 --output secrets-report.json
+ 
+ dotnet run --project DotNetAuditTool.CLI -- scan-secrets "D:\Projects\DotNetAuditTool" --output secrets-report.html
 ```

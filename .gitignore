@@ -1,3 +1,4 @@
 ﻿audit-report.json
 DotNetAuditTool.CLI/Properties/launchSettings.json
 *.mmd
+*.html
