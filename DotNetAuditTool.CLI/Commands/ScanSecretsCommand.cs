@@ -1,4 +1,5 @@
-﻿using System.CommandLine;
+﻿using DotNetAuditTool.CLI.Reporters;
+using System.CommandLine;
 using DotNetAuditTool.Secrets;
 using DotNetAuditTool.CLI.Services;
 
@@ -65,11 +66,8 @@ public static class ScanSecretsCommand
 
                 if (!string.IsNullOrEmpty(output))
                 {
-                    var json = System.Text.Json.JsonSerializer.Serialize(result, new System.Text.Json.JsonSerializerOptions
-                    {
-                        WriteIndented = true
-                    });
-                    await File.WriteAllTextAsync(output, json);
+                    IReportWriter<SecretScanResult> reportWriter = ReportWriterFactory.CreateJson<SecretScanResult>();
+                    await reportWriter.WriteAsync(result, output);
                     console.WriteSuccess($"Results saved to {output}");
                 }
 

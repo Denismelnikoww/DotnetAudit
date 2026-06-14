@@ -1,4 +1,5 @@
-﻿using DotNetAuditTool.CLI.Services;
+﻿using DotNetAuditTool.CLI.Reporters;
+using DotNetAuditTool.CLI.Services;
 using DotNetAuditTool.Core.Models;
 using DotNetAuditTool.Secrets;
 using DotNetAuditTool.Security;
@@ -146,11 +147,8 @@ public static class AnalyzeCommand
                 // 9. Save JSON report
                 if (!string.IsNullOrEmpty(output))
                 {
-                    var json = System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions
-                    {
-                        WriteIndented = true
-                    });
-                    await File.WriteAllTextAsync(output, json);
+                    IReportWriter<AuditReport> reportWriter = ReportWriterFactory.CreateJson<AuditReport>();
+                    await reportWriter.WriteAsync(report, output);
                     console.WriteSuccess($"Report saved to {output}");
                 }
 

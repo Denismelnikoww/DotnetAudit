@@ -1,4 +1,5 @@
-﻿using DotNetAuditTool.CLI.Services;
+﻿using DotNetAuditTool.CLI.Reporters;
+using DotNetAuditTool.CLI.Services;
 using DotNetAuditTool.Core.Models;
 using DotNetAuditTool.DependencyGraphBuilder;
 using Spectre.Console;
@@ -67,14 +68,12 @@ public static class GraphCommand
                 }
                 else if (format == "json")
                 {
-                    var json = System.Text.Json.JsonSerializer.Serialize(graph, new System.Text.Json.JsonSerializerOptions
-                    {
-                        WriteIndented = true
-                    });
+                    IReportWriter<DependencyGraph> reportWriter = ReportWriterFactory.CreateJson<DependencyGraph>();
+                    var json = reportWriter.Serialize(graph);
 
                     if (!string.IsNullOrEmpty(output))
                     {
-                        await File.WriteAllTextAsync(output, json);
+                        await reportWriter.WriteAsync(graph, output);
                         console.WriteSuccess($"JSON graph saved to {output}");
                     }
                     else
