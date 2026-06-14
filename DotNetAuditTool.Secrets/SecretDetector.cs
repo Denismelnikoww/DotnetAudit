@@ -4,29 +4,29 @@ namespace DotNetAuditTool.Secrets;
 
 public class SecretDetector
 {
-    private readonly FileScanner _fileScanner;
     private readonly List<SecretMatch> _foundSecrets;
 
     public SecretDetector()
     {
-        _fileScanner = new FileScanner();
         _foundSecrets = new List<SecretMatch>();
     }
 
-    public async Task<SecretScanResult> ScanAsync(string targetPath)
+    public async Task<SecretScanResult> ScanAsync(string targetPath, IEnumerable<string>? ignoreFilePaths = null)
     {
         Console.WriteLine($"Starting secret scan on: {targetPath}");
 
         var secrets = new List<SecretMatch>();
 
+        var fileScanner = new FileScanner(ignoreFilePaths);
+
         if (File.Exists(targetPath))
         {
-            var fileSecrets = await _fileScanner.ScanFileAsync(targetPath);
+            var fileSecrets = await fileScanner.ScanFileAsync(targetPath);
             secrets.AddRange(fileSecrets);
         }
         else if (Directory.Exists(targetPath))
         {
-            var dirSecrets = await _fileScanner.ScanDirectoryAsync(targetPath);
+            var dirSecrets = await fileScanner.ScanDirectoryAsync(targetPath);
             secrets.AddRange(dirSecrets);
         }
         else

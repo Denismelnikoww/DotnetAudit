@@ -6,10 +6,11 @@ namespace DotNetAuditTool.Secrets;
 public class FileScanner
 {
     private readonly List<string> _ignorePatterns;
+        private readonly HashSet<string> _ignoreFileNames;
     private readonly List<string> _allowedExtensions;
     private readonly List<string> _ignoreDirectories;
 
-    public FileScanner()
+    public FileScanner(IEnumerable<string>? ignoreFileNames = null)
     {
         _ignorePatterns = new List<string>
         {
@@ -19,6 +20,16 @@ public class FileScanner
             "*.zip", "*.rar", "*.7z", "*.tar", "*.gz",
             "*.pdf", "*.doc", "*.docx", "*.xls", "*.xlsx"
         };
+
+        _ignoreFileNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (ignoreFileNames != null)
+        {
+            foreach (var f in ignoreFileNames)
+            {
+                if (!string.IsNullOrWhiteSpace(f))
+                    _ignoreFileNames.Add(Path.GetFileName(f));
+            }
+        }
 
         _allowedExtensions = new List<string>
         {
@@ -117,6 +128,10 @@ public class FileScanner
     private bool ShouldIgnoreFile(string filePath)
     {
         var fileName = Path.GetFileName(filePath);
+
+        // ignore explicit filenames (like generated report files)
+        if (_ignoreFileNames != null && _ignoreFileNames.Contains(fileName))
+            return true;
 
         foreach (var pattern in _ignorePatterns)
         {

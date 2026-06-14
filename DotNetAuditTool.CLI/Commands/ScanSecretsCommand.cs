@@ -43,7 +43,8 @@ public static class ScanSecretsCommand
             try
             {
                 var detector = new SecretDetector();
-                var result = await detector.ScanAsync(path);
+                var reportFullPath = string.IsNullOrEmpty(output) ? null : Path.GetFullPath(output);
+                var result = await detector.ScanAsync(path, reportFullPath is null ? null : new[] { reportFullPath });
 
                 console.WriteSecretsTable(result.FoundSecrets);
 

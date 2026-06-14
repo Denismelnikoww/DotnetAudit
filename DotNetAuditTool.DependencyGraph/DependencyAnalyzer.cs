@@ -20,7 +20,7 @@ public class DependencyAnalyzer
             {
                 return await _graphBuilder.BuildFromProjectAsync(targetPath);
             }
-            else if (extension == ".sln")
+            else if (extension.StartsWith(".sln"))
             {
                 return await _graphBuilder.BuildFromSolutionAsync(targetPath);
             }

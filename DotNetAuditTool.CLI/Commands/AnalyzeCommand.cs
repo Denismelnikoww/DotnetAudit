@@ -87,9 +87,10 @@ public static class AnalyzeCommand
                 // 5. Scan for secrets
                 console.WriteInfo("Scanning for secrets in code...");
                 var secretDetector = new SecretDetector();
-                var secretResult = await secretDetector.ScanAsync(
-                    Directory.Exists(path) ? path : Path.GetDirectoryName(path) ?? path
-                );
+                var scanTarget = Directory.Exists(path) ? path : Path.GetDirectoryName(path) ?? path;
+                // compute full path to output file so scanner can ignore it
+                var reportFullPath = Path.GetFullPath(output ?? "audit-report.json");
+                var secretResult = await secretDetector.ScanAsync(scanTarget, new[] { reportFullPath });
                 console.WriteSuccess($"Found {secretResult.FoundSecrets.Count} potential secrets");
 
                 // 6. Generate report
