@@ -18,14 +18,6 @@
 - `check-vulns` — проверка пакетов на известные уязвимости
 - `scan-secrets` — поиск потенциальных секретов и конфиденциальных данных в файлах
 
-## Сборка
-
-Из корня репозитория:
-
-```powershell
-dotnet build
-```
-
 ## Использование CLI
 
 Все команды запускаются через CLI-проект:
@@ -160,23 +152,3 @@ dotnet run --project DotNetAuditTool.CLI -- scan-secrets "D:\Projects\DotNetAudi
 
 dotnet run --project DotNetAuditTool.CLI -- scan-secrets "D:\Projects\DotNetAuditTool" --entropy-threshold 5.0 --output secrets-report.json
 ```
-
-## Примечания по реализации
-
-- CLI реализован с помощью `System.CommandLine` и содержит команды в `DotNetAuditTool.CLI/Commands`.
-- Сериализация JSON-отчётов вынесена в общий интерфейс `DotNetAuditTool.CLI.Reporters.IReportWriter<T>` и класс `JsonReportWriter<T>`.
-- Построение графа зависимостей выполняется в `DotNetAuditTool.DependencyGraphBuilder`.
-- Логика поиска секретов реализована в `DotNetAuditTool.Secrets` и автоматически игнорирует сгенерированные файлы отчётов.
-- Сканирование уязвимостей и проверка версий реализованы в `DotNetAuditTool.Security` и `DotNetAuditTool.VersionChecker`.
-
-## Примечания
-
-- Пути могут быть абсолютными или относительными.
-- Если путь не указан, некоторые команды используют текущую директорию по умолчанию.
-- Команда `graph` поддерживает экспорт в Mermaid для визуализации.
-
-## Дальнейшие улучшения
-
-- Добавить поддержку XML-отчётов через `XmlReportWriter<T>`.
-- Добавить выбор типа репортера на уровне команды.
-- Расширить визуализацию графа зависимостей и вывод дерева пакетов.
