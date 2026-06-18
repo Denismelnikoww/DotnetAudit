@@ -9,12 +9,12 @@
   - проверка совместимости версий пакетов
   - сканирование на уязвимости
   - поиск секретов
-  - генерация JSON или XML отчёта по расширению файла
+  - генерация JSON или HTML отчёта по расширению файла
 - `graph` — построение и экспорт графа зависимостей
   - вывод в консоль
   - экспорт в Mermaid
   - экспорт в JSON
-- `check-versions` — поиск устаревших NuGet-пакетов и генерация скрипта обновления
+- `check-versions` — поиск устаревших NuGet-пакетов
 - `check-vulns` — проверка пакетов на известные уязвимости
 - `scan-secrets` — поиск потенциальных секретов и конфиденциальных данных в файлах
 
@@ -40,7 +40,7 @@ dotnet run --project DotNetAuditTool.CLI -- analyze <path> [--output|-o <file>] 
 - `<path>` — путь к `.csproj`, `.sln`, `.slnx` или директории.
 
 Опции:
-- `--output`, `-o` — путь к файлу для сохранения отчёта. Формат определяется по расширению: `.json` или `.xml`.
+- `--output`, `-o` — путь к файлу для сохранения отчёта. Формат определяется по расширению: `.json` или `.html`.
 - `--verbose`, `-v` — вывод подробных таблиц по уязвимостям, устаревшим пакетам и секретам.
 
 Пример:
@@ -58,7 +58,7 @@ dotnet run --project DotNetAuditTool.CLI -- analyze "D:\Projects\DotNetAuditTool
 Примечания:
 - Анализатор строит граф зависимостей и сканирует все проекты, которые он находит.
 - Сгенерированный файл отчёта автоматически игнорируется при сканировании секретов, чтобы он сам себя не сканировал.
-- Формат отчёта и репортера для `analyze` определяется расширением выходного файла: `.json` или `.xml`.
+- Формат отчёта и репортера для `analyze` определяется расширением выходного файла: `.json` или `.html`.
 
 ### `graph`
 
@@ -89,26 +89,21 @@ dotnet run --project DotNetAuditTool.CLI -- graph "D:\Projects\DotNetAuditTool" 
 
 ### `check-versions`
 
-Проверяет пакеты на устаревание и при необходимости генерирует PowerShell-скрипт обновления.
+Проверяет пакеты на устаревание и совместимость версий.
 
 Использование:
 
 ```powershell
-dotnet run --project DotNetAuditTool.CLI -- check-versions <path> [--fix|-f]
+dotnet run --project DotNetAuditTool.CLI -- check-versions <path>
 ```
 
 Аргументы:
 - `<path>` — путь к `.csproj`, `.sln`, `.slnx` или директории.
 
-Опции:
-- `--fix`, `-f` — сгенерировать файл `update-packages.ps1` с командами `dotnet add package` для устаревших пакетов.
-
 Пример:
 
 ```powershell
 dotnet run --project DotNetAuditTool.CLI -- check-versions "D:\Projects\DotNetAuditTool"
-
-dotnet run --project DotNetAuditTool.CLI -- check-versions "D:\Projects\DotNetAuditTool" --fix
 ```
 
 ### `check-vulns`
@@ -118,21 +113,16 @@ dotnet run --project DotNetAuditTool.CLI -- check-versions "D:\Projects\DotNetAu
 Использование:
 
 ```powershell
-dotnet run --project DotNetAuditTool.CLI -- check-vulns <path> [--github-token|-t <token>]
+dotnet run --project DotNetAuditTool.CLI -- check-vulns <path>
 ```
 
 Аргументы:
 - `<path>` — путь к `.csproj`, `.sln`, `.slnx` или директории.
 
-Опции:
-- `--github-token`, `-t` — опциональный GitHub-токен для работы с advisory API.
-
 Пример:
 
 ```powershell
 dotnet run --project DotNetAuditTool.CLI -- check-vulns "D:\Projects\DotNetAuditTool"
-
-dotnet run --project DotNetAuditTool.CLI -- check-vulns "D:\Projects\DotNetAuditTool" --github-token YOUR_TOKEN
 ```
 
 ### `scan-secrets`
@@ -150,7 +140,7 @@ dotnet run --project DotNetAuditTool.CLI -- scan-secrets <path> [--entropy-thres
 
 Опции:
 - `--entropy-threshold`, `-e` — порог энтропии для обнаружения (по умолчанию `4.5`).
-- `--output`, `-o` — путь к файлу для сохранения результатов. Формат выбирается по расширению: `.json` или `.xml`.
+- `--output`, `-o` — путь к файлу для сохранения результатов. Формат выбирается по расширению: `.json` или `.html`.
 
 Примеры:
 
@@ -160,4 +150,66 @@ dotnet run --project DotNetAuditTool.CLI -- scan-secrets "D:\Projects\DotNetAudi
 dotnet run --project DotNetAuditTool.CLI -- scan-secrets "D:\Projects\DotNetAuditTool" --entropy-threshold 5.0 --output secrets-report.json
  
  dotnet run --project DotNetAuditTool.CLI -- scan-secrets "D:\Projects\DotNetAuditTool" --output secrets-report.html
+```
+
+## Быстрые команды для демонстрации
+
+### Полный аудит
+
+```powershell
+# Полный аудит с подробным выводом
+dotnet run --project DotNetAuditTool.CLI -- analyze . --verbose
+
+# Аудит с сохранением JSON-отчёта
+dotnet run --project DotNetAuditTool.CLI -- analyze . --output audit-report.json
+
+# Аудит с сохранением HTML-отчёта
+dotnet run --project DotNetAuditTool.CLI -- analyze . --output audit-report.html
+
+
+```
+
+### Граф зависимостей
+
+```powershell
+# Вывод графа в консоль
+dotnet run --project DotNetAuditTool.CLI -- graph .
+
+# Экспорт графа в Mermaid (для визуализации)
+dotnet run --project DotNetAuditTool.CLI -- graph . --format mermaid --output graph.mmd
+
+# Экспорт графа в JSON
+dotnet run --project DotNetAuditTool.CLI -- graph . --format json --output dependency-graph.json
+```
+
+### Проверка версий пакетов
+
+```powershell
+# Показать устаревшие пакеты
+dotnet run --project DotNetAuditTool.CLI -- check-versions .
+```
+
+### Проверка уязвимостей
+
+```powershell
+# Сканировать пакеты на уязвимости
+dotnet run --project DotNetAuditTool.CLI -- check-vulns .
+
+
+```
+
+### Сканирование секретов
+
+```powershell
+# Простое сканирование
+dotnet run --project DotNetAuditTool.CLI -- scan-secrets .
+
+# С повышенным порогом энтропии (меньше false positives)
+dotnet run --project DotNetAuditTool.CLI -- scan-secrets . --entropy-threshold 5.0
+
+# Сохранить результаты в JSON
+dotnet run --project DotNetAuditTool.CLI -- scan-secrets . --output secrets-report.json
+
+# Сохранить результаты в HTML
+dotnet run --project DotNetAuditTool.CLI -- scan-secrets . --output secrets-report.html
 ```

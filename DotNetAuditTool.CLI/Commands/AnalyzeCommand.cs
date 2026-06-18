@@ -180,22 +180,35 @@ public static class AnalyzeCommand
     {
         var projects = new List<ProjectInfo>();
 
-        foreach (var node in graph.Nodes)
+        foreach (var node in graph.Nodes.Where(n => n.Type == DependencyType.ProjectReference))
         {
-            if (node.Type == DependencyType.ProjectReference &&
-                node.Metadata.TryGetValue("Path", out var path))
+            if (node.Metadata.TryGetValue("Path", out var path))
             {
                 var project = new ProjectInfo
                 {
                     Name = node.Name,
                     FilePath = path.ToString() ?? string.Empty,
-                    TargetFramework = node.Version
+                    TargetFramework = node.Metadata.TryGetValue("TargetFramework", out var tf) 
+                        ? tf.ToString() ?? node.Version 
+                        : node.Version
                 };
 
-                // Parse packages from metadata
-                if (node.Metadata.TryGetValue("Packages", out var packageCount))
+                // Collect all NuGet packages that this project depends on
+                foreach (var depId in node.DependencyIds)
                 {
-                    // This is simplified - in real implementation you'd store full package info
+                    var depNode = graph.Nodes.FirstOrDefault(n => n.Id == depId);
+                    if (depNode?.Type == DependencyType.NuGet)
+                    {
+                        project.Packages.Add(new PackageReference
+                        {
+                            Name = depNode.Name,
+                            Version = depNode.Version,
+                            IsDevelopmentDependency = depNode.Metadata.ContainsKey("IsDevelopmentDependency") && 
+                                                    (bool)depNode.Metadata["IsDevelopmentDependency"],
+                            IsPrivateAssets = depNode.Metadata.ContainsKey("IsPrivateAssets") && 
+                                             (bool)depNode.Metadata["IsPrivateAssets"]
+                        });
+                    }
                 }
 
                 projects.Add(project);

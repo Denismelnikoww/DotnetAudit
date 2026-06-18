@@ -23,13 +23,10 @@ public static class CheckVulnerabilitiesCommand
             }
             // Optionally, validate if the path exists here if desired
         });
-        var githubTokenOption = new Option<string>(["--github-token", "-t"],
-            "GitHub token for advisory API (optional)");
 
         command.AddArgument(pathArg);
-        command.AddOption(githubTokenOption);
 
-        command.SetHandler(async (string path, string? githubToken) =>
+        command.SetHandler(async (string path) =>
         {
             // Use current directory if path is empty or whitespace
             if (string.IsNullOrWhiteSpace(path))
@@ -42,17 +39,11 @@ public static class CheckVulnerabilitiesCommand
 
             try
             {
-                // Set GitHub token if provided
-                if (!string.IsNullOrEmpty(githubToken))
-                {
-                    Environment.SetEnvironmentVariable("GITHUB_TOKEN", githubToken);
-                }
-
                 var analyzer = new DependencyAnalyzer();
                 var graph = await analyzer.AnalyzeAsync(path);
                 var projects = GetProjectsFromGraph(graph);
 
-                var scanner = new VulnerabilityScanner(githubToken);
+                var scanner = new VulnerabilityScanner();
                 var report = await scanner.GenerateReportAsync(projects);
 
                 console.WriteVulnerabilityTable(report.Vulnerabilities);
@@ -93,14 +84,45 @@ public static class CheckVulnerabilitiesCommand
                 console.WriteError($"Vulnerability check failed: {ex.Message}");
                 Environment.ExitCode = 1;
             }
-        }, pathArg, githubTokenOption);
+        }, pathArg);
 
         return command;
     }
 
     private static List<ProjectInfo> GetProjectsFromGraph(DependencyGraph graph)
     {
-        // Same implementation as in other commands
-        return new List<ProjectInfo>();
+        var projects = new List<ProjectInfo>();
+
+        foreach (var node in graph.Nodes.Where(n => n.Type == DependencyType.ProjectReference))
+        {
+            if (node.Metadata.TryGetValue("Path", out var path))
+            {
+                var project = new ProjectInfo
+                {
+                    Name = node.Name,
+                    FilePath = path.ToString() ?? string.Empty,
+                    TargetFramework = node.Metadata.TryGetValue("TargetFramework", out var tf) ? tf.ToString() ?? node.Version : node.Version
+                };
+
+                foreach (var depId in node.DependencyIds)
+                {
+                    var depNode = graph.Nodes.FirstOrDefault(n => n.Id == depId);
+                    if (depNode?.Type == DependencyType.NuGet)
+                    {
+                        project.Packages.Add(new PackageReference
+                        {
+                            Name = depNode.Name,
+                            Version = depNode.Version,
+                            IsDevelopmentDependency = depNode.Metadata.ContainsKey("IsDevelopmentDependency") && (bool)depNode.Metadata["IsDevelopmentDependency"],
+                            IsPrivateAssets = depNode.Metadata.ContainsKey("IsPrivateAssets") && (bool)depNode.Metadata["IsPrivateAssets"]
+                        });
+                    }
+                }
+
+                projects.Add(project);
+            }
+        }
+
+        return projects;
     }
 }

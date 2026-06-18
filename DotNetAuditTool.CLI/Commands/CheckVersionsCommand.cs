@@ -23,12 +23,10 @@ public static class CheckVersionsCommand
             }
             // Optionally, validate if the path exists here if desired
         });
-        var fixOption = new Option<bool>(["--fix", "-f"], "Generate update scripts");
 
         command.AddArgument(pathArg);
-        command.AddOption(fixOption);
 
-        command.SetHandler(async (string path, bool fix) =>
+        command.SetHandler(async (string path) =>
         {
             // Use current directory if path is empty or whitespace
             if (string.IsNullOrWhiteSpace(path))
@@ -67,13 +65,6 @@ public static class CheckVersionsCommand
                 console.WriteInfo($"  - Minor updates: {minorUpdates}");
                 console.WriteInfo($"  - Patch updates: {patchUpdates}");
 
-                if (fix && outdated > 0)
-                {
-                    var script = GenerateUpdateScript(allIssues);
-                    await File.WriteAllTextAsync("update-packages.ps1", script);
-                    console.WriteSuccess("Update script generated: update-packages.ps1");
-                }
-
                 if (outdated == 0)
                 {
                     console.WriteSuccess("All packages are up to date!");
@@ -88,30 +79,45 @@ public static class CheckVersionsCommand
                 console.WriteError($"Version check failed: {ex.Message}");
                 Environment.ExitCode = 1;
             }
-        }, pathArg, fixOption);
+        }, pathArg);
 
         return command;
     }
 
     private static List<ProjectInfo> GetProjectsFromGraph(DependencyGraph graph)
     {
-        // Simplified - same as in AnalyzeCommand
-        return new List<ProjectInfo>();
-    }
+        var projects = new List<ProjectInfo>();
 
-    private static string GenerateUpdateScript(List<VersionIssue> issues)
-    {
-        var script = "# Package Update Script\n";
-        script += "# Run with: powershell -File update-packages.ps1\n\n";
-
-        foreach (var issue in issues.Where(i => i.IsOutdated && i.LatestVersion != null))
+        foreach (var node in graph.Nodes.Where(n => n.Type == DependencyType.ProjectReference))
         {
-            script += $"Write-Host \"Updating {issue.PackageName} from {issue.CurrentVersion} to {issue.LatestVersion}\" -ForegroundColor Yellow\n";
-            script += $"dotnet add package {issue.PackageName} --version {issue.LatestVersion}\n";
+            if (node.Metadata.TryGetValue("Path", out var path))
+            {
+                var project = new ProjectInfo
+                {
+                    Name = node.Name,
+                    FilePath = path.ToString() ?? string.Empty,
+                    TargetFramework = node.Metadata.TryGetValue("TargetFramework", out var tf) ? tf.ToString() ?? node.Version : node.Version
+                };
+
+                foreach (var depId in node.DependencyIds)
+                {
+                    var depNode = graph.Nodes.FirstOrDefault(n => n.Id == depId);
+                    if (depNode?.Type == DependencyType.NuGet)
+                    {
+                        project.Packages.Add(new PackageReference
+                        {
+                            Name = depNode.Name,
+                            Version = depNode.Version,
+                            IsDevelopmentDependency = depNode.Metadata.ContainsKey("IsDevelopmentDependency") && (bool)depNode.Metadata["IsDevelopmentDependency"],
+                            IsPrivateAssets = depNode.Metadata.ContainsKey("IsPrivateAssets") && (bool)depNode.Metadata["IsPrivateAssets"]
+                        });
+                    }
+                }
+
+                projects.Add(project);
+            }
         }
 
-        script += "\nWrite-Host \"Update complete!\" -ForegroundColor Green\n";
-
-        return script;
+        return projects;
     }
 }

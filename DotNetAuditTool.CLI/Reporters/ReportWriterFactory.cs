@@ -10,18 +10,12 @@ public static class ReportWriterFactory
         return new JsonReportWriter<T>(options);
     }
 
-    public static IReportWriter<T> CreateXml<T>()
-    {
-        return new XmlReportWriter<T>();
-    }
-
     public static IReportWriter<T> CreateByExtension<T>(string outputPath)
     {
         var extension = Path.GetExtension(outputPath).ToLowerInvariant();
 
         return extension switch
         {
-            ".xml" => CreateXml<T>(),
             ".html" or ".htm" => CreateHtml<T>(),
             _ => CreateJson<T>(),
         };

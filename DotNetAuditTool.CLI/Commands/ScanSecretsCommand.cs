@@ -66,9 +66,25 @@ public static class ScanSecretsCommand
 
                 if (!string.IsNullOrEmpty(output))
                 {
+                    var limitedResult = new SecretScanResult
+                    {
+                        ScanTime = result.ScanTime,
+                        TargetPath = result.TargetPath,
+                        TotalFilesScanned = result.TotalFilesScanned,
+                        FoundSecrets = result.FoundSecrets.Take(1000).ToList(),
+                        SecretsByType = result.SecretsByType,
+                        FilesWithSecrets = result.FilesWithSecrets,
+                        RiskLevel = result.RiskLevel,
+                        Summary = result.Summary
+                    };
+
                     IReportWriter<SecretScanResult> reportWriter = ReportWriterFactory.CreateByExtension<SecretScanResult>(output);
-                    await reportWriter.WriteAsync(result, output);
+                    await reportWriter.WriteAsync(limitedResult, output);
                     console.WriteSuccess($"Results saved to {output}");
+                    if (result.FoundSecrets.Count > 1000)
+                    {
+                        console.WriteWarning($"Note: report limited to 1000 of {result.FoundSecrets.Count} secrets to prevent memory issues");
+                    }
                 }
 
                 if (result.RiskLevel >= SecretRiskLevel.High)

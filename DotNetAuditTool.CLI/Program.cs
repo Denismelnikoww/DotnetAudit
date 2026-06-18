@@ -22,6 +22,7 @@ public class Program
         rootCommand.AddCommand(AnalyzeCommand.Create());
         rootCommand.AddCommand(GraphCommand.Create());
         rootCommand.AddCommand(CheckVersionsCommand.Create());
+        rootCommand.AddCommand(CheckVulnerabilitiesCommand.Create());
         rootCommand.AddCommand(ScanSecretsCommand.Create());
 
         var parser = new CommandLineBuilder(rootCommand)
@@ -58,7 +59,7 @@ public class Program
 
         table.AddRow("analyze", "Complete audit of .NET project", "dotnet-audit analyze ./src");
         table.AddRow("graph", "Build and visualize dependency graph", "dotnet-audit graph -f mermaid");
-        table.AddRow("check-versions", "Check for outdated packages", "dotnet-audit check-versions --fix");
+        table.AddRow("check-versions", "Check for outdated packages", "dotnet-audit check-versions .");
         table.AddRow("scan-secrets", "Search for secrets in code", "dotnet-audit scan-secrets --verbose");
 
         AnsiConsole.Write(table);
