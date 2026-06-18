@@ -74,7 +74,6 @@ public class GraphBuilder
                 var packageNode = GetOrCreatePackageNode(nodeDict, package);
                 graph.Nodes.Add(packageNode);
 
-                // add dependency relationship on the project node
                 projectNode.Dependencies.Add(packageNode);
                 projectNode.DependencyIds.Add(packageNode.Id);
 
@@ -97,7 +96,6 @@ public class GraphBuilder
                 {
                     var refNode = nodeDict.Values.First(n => n.Name == referencedProject.Name);
 
-                    // add project reference relationship on the project node
                     projectNode.Dependencies.Add(refNode);
                     projectNode.DependencyIds.Add(refNode.Id);
 

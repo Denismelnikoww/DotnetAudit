@@ -36,7 +36,6 @@ public static class AnalyzeCommand
 
         command.SetHandler(async (string path, string output, bool verbose) =>
         {
-            // Use current directory if path is empty or whitespace
             if (string.IsNullOrWhiteSpace(path))
             {
                 path = Environment.CurrentDirectory;
@@ -48,17 +47,14 @@ public static class AnalyzeCommand
 
             try
             {
-                // 1. Build dependency graph
                 console.WriteInfo("Building dependency graph...");
                 var graphBuilder = new DependencyAnalyzer();
                 var graph = await graphBuilder.AnalyzeAsync(path);
                 console.WriteSuccess($"Found {graph.Nodes.Count} dependency nodes");
 
-                // 2. Get all projects
                 var projects = GetProjectsFromGraph(graph);
                 console.WriteInfo($"Found {projects.Count} projects to analyze");
 
-                // 3. Check version compatibility
                 console.WriteInfo("Checking version compatibility...");
                 var versionChecker = new VersionCompatibilityChecker();
                 var versionIssues = new List<VersionIssue>();
@@ -77,7 +73,6 @@ public static class AnalyzeCommand
 
                 console.WriteSuccess($"Found {versionIssues.Count(i => i.IsOutdated)} outdated packages");
 
-                // 4. Scan for vulnerabilities
                 console.WriteInfo("Scanning for vulnerabilities...");
                 var vulnScanner = new VulnerabilityScanner();
                 var vulnerabilities = await vulnScanner.ScanPackagesAsync(
@@ -85,16 +80,13 @@ public static class AnalyzeCommand
                 );
                 console.WriteSuccess($"Found {vulnerabilities.Count} vulnerabilities");
 
-                // 5. Scan for secrets
                 console.WriteInfo("Scanning for secrets in code...");
                 var secretDetector = new SecretDetector();
                 var scanTarget = Directory.Exists(path) ? path : Path.GetDirectoryName(path) ?? path;
-                // compute full path to output file so scanner can ignore it
                 var reportFullPath = Path.GetFullPath(output ?? "audit-report.json");
                 var secretResult = await secretDetector.ScanAsync(scanTarget, new[] { reportFullPath });
                 console.WriteSuccess($"Found {secretResult.FoundSecrets.Count} potential secrets");
 
-                // 6. Generate report
                 var report = new AuditReport
                 {
                     TargetPath = path,
@@ -119,10 +111,8 @@ public static class AnalyzeCommand
                     }
                 };
 
-                // 7. Display summary
                 console.WriteSummary(report);
 
-                // 8. Show detailed tables if verbose
                 if (verbose)
                 {
                     if (vulnerabilities.Any())
@@ -144,7 +134,6 @@ public static class AnalyzeCommand
                     }
                 }
 
-                // 9. Save JSON report
                 if (!string.IsNullOrEmpty(output))
                 {
                     IReportWriter<AuditReport> reportWriter = ReportWriterFactory.CreateByExtension<AuditReport>(output);
@@ -152,7 +141,6 @@ public static class AnalyzeCommand
                     console.WriteSuccess($"Report saved to {output}");
                 }
 
-                // 10. Exit with error code if critical issues found
                 if (vulnerabilities.Any(v => v.Severity == SeverityLevel.Critical) ||
                     secretResult.RiskLevel == SecretRiskLevel.Critical)
                 {
@@ -193,7 +181,6 @@ public static class AnalyzeCommand
                         : node.Version
                 };
 
-                // Collect all NuGet packages that this project depends on
                 foreach (var depId in node.DependencyIds)
                 {
                     var depNode = graph.Nodes.FirstOrDefault(n => n.Id == depId);
@@ -222,11 +209,9 @@ public static class AnalyzeCommand
     {
         double score = 0;
 
-        // Vulnerabilities contribute up to 70 points
         var vulnScore = vulnerabilities.Sum(v => v.CvssScore);
         score += Math.Min(70, vulnScore);
 
-        // Secrets contribute up to 30 points
         var secretScore = Math.Min(30, secrets.Count * 3);
         score += secretScore;
 

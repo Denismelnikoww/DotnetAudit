@@ -129,7 +129,6 @@ public class FileScanner
     {
         var fileName = Path.GetFileName(filePath);
 
-        // ignore explicit filenames (like generated report files)
         if (_ignoreFileNames != null && _ignoreFileNames.Contains(fileName))
             return true;
 

@@ -29,7 +29,6 @@ public static class GraphCommand
         {
             var console = new ConsoleOutputService();
 
-            // Получаем полный путь (относительный -> абсолютный)
             var fullPath = Path.GetFullPath(path);
 
             console.WriteHeader($"Building dependency graph for: {fullPath}");
@@ -41,7 +40,6 @@ public static class GraphCommand
 
                 console.WriteSuccess($"Built graph with {graph.Nodes.Count} nodes and {graph.Edges.Count} edges");
 
-                // Find circular dependencies
                 var cycles = analyzer.FindCircularDependencies(graph);
                 if (cycles.Any())
                 {
@@ -52,7 +50,6 @@ public static class GraphCommand
                     }
                 }
 
-                // Output in requested format
                 if (format == "mermaid")
                 {
                     var mermaid = GenerateMermaidGraph(graph);
@@ -92,7 +89,6 @@ public static class GraphCommand
                 }
                 else
                 {
-                    // Console output
                     var rootNodes = graph.GetRootNodes();
                     console.WriteInfo($"Root nodes: {string.Join(", ", rootNodes.Select(n => n.Name))}");
 
@@ -153,7 +149,6 @@ public static class GraphCommand
 
     private static string SanitizeMermaidLabel(string name)
     {
-        // Заменяем проблемные символы для ID узлов
         return name
             .Replace(' ', '_')
             .Replace('.', '_')
@@ -164,7 +159,6 @@ public static class GraphCommand
 
     private static string EscapeMermaidText(string text)
     {
-        // Экранируем проблемные символы в тексте узла
         return text
             .Replace("[", "\\[")
             .Replace("]", "\\]")

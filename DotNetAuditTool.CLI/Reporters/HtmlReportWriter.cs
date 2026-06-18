@@ -1,4 +1,3 @@
-using System.IO;
 using System.Text;
 using System.Text.Json;
 
@@ -35,38 +34,40 @@ public class HtmlReportWriter<T> : IReportWriter<T>
         sb.Append(Escape(title));
         sb.Append("</title>");
 
-        // Minimal modern, readable CSS + card styles
-        sb.Append(@"<style>
-    body{font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color:#111; background:#fff; margin:0; padding:20px; line-height:1.5}
-    main{max-width:1100px;margin:0 auto}
-    h1{font-size:1.8rem;margin:0 0 0.5rem;color:#0b3d91}
-    h2{font-size:1rem;margin:0;color:#1f4e79;display:inline-block}
-    section{padding:10px 0}
-    p,li{font-size:0.95rem;color:#222}
-    ul{margin:0 0 0 1.2rem}
-    code,pre{font-family: Consolas, 'Courier New', monospace; background:#f6f8fa; padding:2px 6px;border-radius:4px}
-    table{border-collapse:collapse;width:100%;margin:8px 0}
-    th,td{border:1px solid #e6e6e6;padding:6px 8px;text-align:left}
-    .small{color:#666;font-size:0.85rem}
-        .card{border:1px solid #e8eef8;border-radius:8px;padding:10px;margin:10px 0;background:#ffffff;box-shadow:0 1px 2px rgba(16,24,40,0.03)}
-        .card.even{background:#fbfcff}
-        .card.odd{background:#ffffff}
-    .card-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
-    .toggle{background:transparent;border:none;font-size:1rem;cursor:pointer;color:#1f4e79}
-    .card-body{padding-left:6px}
-    </style>");
+        sb.Append("""
+                  <style>
+                      body{font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; color:#111; background:#fff; margin:0; padding:20px; line-height:1.5}
+                      main{max-width:1100px;margin:0 auto}
+                      h1{font-size:1.8rem;margin:0 0 0.5rem;color:#0b3d91}
+                      h2{font-size:1rem;margin:0;color:#1f4e79;display:inline-block}
+                      section{padding:10px 0}
+                      p,li{font-size:0.95rem;color:#222}
+                      ul{margin:0 0 0 1.2rem}
+                      code,pre{font-family: Consolas, 'Courier New', monospace; background:#f6f8fa; padding:2px 6px;border-radius:4px}
+                      table{border-collapse:collapse;width:100%;margin:8px 0}
+                      th,td{border:1px solid #e6e6e6;padding:6px 8px;text-align:left}
+                      .small{color:#666;font-size:0.85rem}
+                          .card{border:1px solid #e8eef8;border-radius:8px;padding:10px;margin:10px 0;background:#ffffff;box-shadow:0 1px 2px rgba(16,24,40,0.03)}
+                          .card.even{background:#fbfcff}
+                          .card.odd{background:#ffffff}
+                      .card-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+                      .toggle{background:transparent;border:none;font-size:1rem;cursor:pointer;color:#1f4e79}
+                      .card-body{padding-left:6px}
+                      </style>
+                  """);
 
-        // Minimal JS for collapse/expand
-        sb.Append(@"<script>
-    function toggle(btn){
-      const header = btn.parentElement;
-      const body = header.nextElementSibling;
-      if(!body) return;
-      const hidden = body.style.display === 'none';
-      body.style.display = hidden ? 'block' : 'none';
-      btn.textContent = hidden ? '▾' : '▸';
-    }
-    </script>");
+        sb.Append("""
+                  <script>
+                      function toggle(btn){
+                        const header = btn.parentElement;
+                        const body = header.nextElementSibling;
+                        if(!body) return;
+                        const hidden = body.style.display === 'none';
+                        body.style.display = hidden ? 'block' : 'none';
+                        btn.textContent = hidden ? '▾' : '▸';
+                      }
+                      </script>
+                  """);
 
         sb.Append("</head><body><main>");
         sb.Append("<h1>");
@@ -89,7 +90,7 @@ public class HtmlReportWriter<T> : IReportWriter<T>
                     var parityClass = depth == 0 ? (idx % 2 == 0 ? " even" : " odd") : string.Empty;
                     sb.Append($"<article class=\"card{parityClass}\">");
                     sb.Append("<header class=\"card-header\">");
-                    var expanded = depth == 0; // top-level cards expanded
+                    var expanded = depth == 0;
                     sb.Append($"<button class=\"toggle\" onclick=\"toggle(this)\">{(expanded ? '▾' : '▸')}</button>");
                     sb.Append("<h2>");
                     sb.Append(Escape(property.Name));
@@ -102,6 +103,7 @@ public class HtmlReportWriter<T> : IReportWriter<T>
                     sb.Append("</article>");
                     idx++;
                 }
+
                 sb.Append("</div>");
                 break;
             case JsonValueKind.Array:
@@ -120,6 +122,7 @@ public class HtmlReportWriter<T> : IReportWriter<T>
                     sb.Append("</article>");
                     i++;
                 }
+
                 sb.Append("</div>");
                 break;
             case JsonValueKind.String:
@@ -128,10 +131,6 @@ public class HtmlReportWriter<T> : IReportWriter<T>
                 sb.Append("</p>");
                 break;
             case JsonValueKind.Number:
-                sb.Append("<p>");
-                sb.Append(Escape(element.GetRawText()));
-                sb.Append("</p>");
-                break;
             case JsonValueKind.True:
             case JsonValueKind.False:
                 sb.Append("<p>");
@@ -155,9 +154,9 @@ public class HtmlReportWriter<T> : IReportWriter<T>
             return string.Empty;
 
         return value.Replace("&", "&amp;")
-                    .Replace("<", "&lt;")
-                    .Replace(">", "&gt;")
-                    .Replace("\"", "&quot;")
-                    .Replace("'", "&#39;");
+            .Replace("<", "&lt;")
+            .Replace(">", "&gt;")
+            .Replace("\"", "&quot;")
+            .Replace("'", "&#39;");
     }
 }

@@ -21,14 +21,12 @@ public static class CheckVulnerabilitiesCommand
             {
                 result.ErrorMessage = "Path cannot be empty.";
             }
-            // Optionally, validate if the path exists here if desired
         });
 
         command.AddArgument(pathArg);
 
         command.SetHandler(async (string path) =>
         {
-            // Use current directory if path is empty or whitespace
             if (string.IsNullOrWhiteSpace(path))
             {
                 path = Environment.CurrentDirectory;
@@ -48,7 +46,6 @@ public static class CheckVulnerabilitiesCommand
 
                 console.WriteVulnerabilityTable(report.Vulnerabilities);
 
-                // Summary
                 console.WriteInfo($"Scanned {report.TotalPackages} packages across {report.TotalProjects} projects");
                 console.WriteInfo($"Found {report.Vulnerabilities.Count} vulnerable packages");
 

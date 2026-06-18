@@ -186,7 +186,7 @@ dotnet-audit scan-secrets "D:\Projects\DotNetAuditTool" --entropy-threshold 5.0 
 dotnet-audit scan-secrets "D:\Projects\DotNetAuditTool" --output secrets-report.html
 ```
 
-## Быстрые команды для демонстрации
+## Демонстрация
 
 ### Полный аудит
 

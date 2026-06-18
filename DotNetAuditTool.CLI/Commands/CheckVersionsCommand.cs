@@ -21,14 +21,12 @@ public static class CheckVersionsCommand
             {
                 result.ErrorMessage = "Path cannot be empty.";
             }
-            // Optionally, validate if the path exists here if desired
         });
 
         command.AddArgument(pathArg);
 
         command.SetHandler(async (string path) =>
         {
-            // Use current directory if path is empty or whitespace
             if (string.IsNullOrWhiteSpace(path))
             {
                 path = Environment.CurrentDirectory;
@@ -54,7 +52,6 @@ public static class CheckVersionsCommand
 
                 console.WriteVersionIssuesTable(allIssues);
 
-                // Summary
                 var outdated = allIssues.Count(i => i.IsOutdated);
                 var majorUpdates = allIssues.Count(i => i.Difference == VersionDifference.Major);
                 var minorUpdates = allIssues.Count(i => i.Difference == VersionDifference.Minor);

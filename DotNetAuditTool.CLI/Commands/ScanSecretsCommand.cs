@@ -20,7 +20,6 @@ public static class ScanSecretsCommand
             {
                 result.ErrorMessage = "Path cannot be empty.";
             }
-            // Optionally, validate if the path exists here if desired
         });
         var entropyThresholdOption = new Option<double>(["--entropy-threshold", "-e"],
             () => 4.5, "Entropy threshold for detection (0-8)");
@@ -32,7 +31,6 @@ public static class ScanSecretsCommand
 
         command.SetHandler(async (string path, double entropyThreshold, string? output) =>
         {
-            // Use current directory if path is empty or whitespace
             if (string.IsNullOrWhiteSpace(path))
             {
                 path = Environment.CurrentDirectory;
@@ -49,7 +47,6 @@ public static class ScanSecretsCommand
 
                 console.WriteSecretsTable(result.FoundSecrets);
 
-                // Summary
                 console.WriteInfo($"Scanned {result.TotalFilesScanned} files");
                 console.WriteInfo($"Found {result.FoundSecrets.Count} potential secrets in {result.FilesWithSecrets.Count} files");
 
