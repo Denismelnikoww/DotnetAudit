@@ -21,81 +21,88 @@ public static class ScanSecretsCommand
                 result.ErrorMessage = "Path cannot be empty.";
             }
         });
-        var entropyThresholdOption = new Option<double>(["--entropy-threshold", "-e"],
-            () => 4.5, "Entropy threshold for detection (0-8)");
+        var entropyThresholdOption = new Option<double?>(["--entropy-threshold", "-e"], "Entropy threshold for detection (0-8)");
         var outputOption = new Option<string>(["--output", "-o"], "Output file for results");
 
         command.AddArgument(pathArg);
         command.AddOption(entropyThresholdOption);
         command.AddOption(outputOption);
 
-        command.SetHandler(async (string path, double entropyThreshold, string? output) =>
-        {
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                path = Environment.CurrentDirectory;
-            }
-
-            var console = new ConsoleOutputService();
-            console.WriteHeader($"Scanning for secrets in: {path}");
-
-            try
-            {
-                var detector = new SecretDetector();
-                var reportFullPath = string.IsNullOrEmpty(output) ? null : Path.GetFullPath(output);
-                var result = await detector.ScanAsync(path, reportFullPath is null ? null : new[] { reportFullPath });
-
-                console.WriteSecretsTable(result.FoundSecrets);
-
-                console.WriteInfo($"Scanned {result.TotalFilesScanned} files");
-                console.WriteInfo($"Found {result.FoundSecrets.Count} potential secrets in {result.FilesWithSecrets.Count} files");
-
-                var riskColor = result.RiskLevel switch
-                {
-                    SecretRiskLevel.Critical => "red",
-                    SecretRiskLevel.High => "orange3",
-                    SecretRiskLevel.Medium => "yellow",
-                    _ => "green"
-                };
-                console.WriteInfo($"Risk level: [{riskColor}]{result.RiskLevel}[/]\n");
-
-                console.WriteInfo(result.Summary);
-
-                if (!string.IsNullOrEmpty(output))
-                {
-                    var limitedResult = new SecretScanResult
-                    {
-                        ScanTime = result.ScanTime,
-                        TargetPath = result.TargetPath,
-                        TotalFilesScanned = result.TotalFilesScanned,
-                        FoundSecrets = result.FoundSecrets.Take(1000).ToList(),
-                        SecretsByType = result.SecretsByType,
-                        FilesWithSecrets = result.FilesWithSecrets,
-                        RiskLevel = result.RiskLevel,
-                        Summary = result.Summary
-                    };
-
-                    IReportWriter<SecretScanResult> reportWriter = ReportWriterFactory.CreateByExtension<SecretScanResult>(output);
-                    await reportWriter.WriteAsync(limitedResult, output);
-                    console.WriteSuccess($"Results saved to {output}");
-                    if (result.FoundSecrets.Count > 1000)
-                    {
-                        console.WriteWarning($"Note: report limited to 1000 of {result.FoundSecrets.Count} secrets to prevent memory issues");
-                    }
-                }
-
-                if (result.RiskLevel >= SecretRiskLevel.High)
-                {
-                    Environment.ExitCode = 1;
-                }
-            }
-            catch (Exception ex)
-            {
-                console.WriteError($"Secret scan failed: {ex.Message}");
-                Environment.ExitCode = 1;
-            }
-        }, pathArg, entropyThresholdOption, outputOption);
+        command.SetHandler(ExecuteScanSecretsCommand, pathArg, entropyThresholdOption, outputOption);
 
         return command;
+    }
+
+    private static async Task<int> ExecuteScanSecretsCommand(string path, double? entropyThreshold, string? output)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            path = Environment.CurrentDirectory;
+        }
+
+        var console = new ConsoleOutputService();
+        console.WriteHeader($"Scanning for secrets in: {path}");
+
+        try
+        {
+            var configurationService = new ConfigurationService();
+            var settings = configurationService.Load();
+            var threshold = entropyThreshold ?? settings.EntropyThreshold;
+
+            var detector = new SecretDetector();
+            var reportFullPath = string.IsNullOrEmpty(output) ? null : Path.GetFullPath(output);
+            var result = await detector.ScanAsync(path, reportFullPath is null ? null : new[] { reportFullPath }, threshold);
+
+            console.WriteSecretsTable(result.FoundSecrets);
+
+            console.WriteInfo($"Scanned {result.TotalFilesScanned} files");
+            console.WriteInfo($"Found {result.FoundSecrets.Count} potential secrets in {result.FilesWithSecrets.Count} files");
+
+            var riskColor = result.RiskLevel switch
+            {
+                SecretRiskLevel.Critical => "red",
+                SecretRiskLevel.High => "orange3",
+                SecretRiskLevel.Medium => "yellow",
+                _ => "green"
+            };
+            console.WriteInfo($"Risk level: [{riskColor}]{result.RiskLevel}[/]\n");
+
+            console.WriteInfo(result.Summary);
+
+            if (!string.IsNullOrEmpty(output))
+            {
+                var limitedResult = new SecretScanResult
+                {
+                    ScanTime = result.ScanTime,
+                    TargetPath = result.TargetPath,
+                    TotalFilesScanned = result.TotalFilesScanned,
+                    FoundSecrets = result.FoundSecrets.Take(1000).ToList(),
+                    SecretsByType = result.SecretsByType,
+                    FilesWithSecrets = result.FilesWithSecrets,
+                    RiskLevel = result.RiskLevel,
+                    Summary = result.Summary
+                };
+
+                IReportWriter<SecretScanResult> reportWriter = ReportWriterFactory.CreateByExtension<SecretScanResult>(output);
+                await reportWriter.WriteAsync(limitedResult, output);
+                console.WriteSuccess($"Results saved to {output}");
+                if (result.FoundSecrets.Count > 1000)
+                {
+                    console.WriteWarning($"Note: report limited to 1000 of {result.FoundSecrets.Count} secrets to prevent memory issues");
+                }
+            }
+
+            if (result.RiskLevel >= SecretRiskLevel.High)
+            {
+                return 1;
+            }
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            console.WriteError($"Secret scan failed: {ex.Message}");
+            return 1;
+        }
     }
 }

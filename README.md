@@ -17,6 +17,7 @@
 - `check-versions` — поиск устаревших NuGet-пакетов
 - `check-vulns` — проверка пакетов на известные уязвимости
 - `scan-secrets` — поиск потенциальных секретов и конфиденциальных данных в файлах
+- `config` — управление постоянными настройками утилиты
 
 ## Использование CLI
 
@@ -167,7 +168,7 @@ dotnet-audit scan-secrets <path> [--entropy-threshold|-e <value>] [--output|-o <
 - `<path>` — путь к файлу или директории.
 
 Опции:
-- `--entropy-threshold`, `-e` — порог энтропии для обнаружения (по умолчанию `4.5`).
+- `--entropy-threshold`, `-e` — порог энтропии для обнаружения. Значение сохраняется в файле `.dotnetaudittool.json`, если оно установлено через `config set-threshold`.
 - `--output`, `-o` — путь к файлу для сохранения результатов. Формат выбирается по расширению: `.json` или `.html`.
 
 Примеры:
@@ -185,6 +186,41 @@ dotnet-audit scan-secrets "D:\Projects\DotNetAuditTool" --entropy-threshold 5.0 
 
 dotnet-audit scan-secrets "D:\Projects\DotNetAuditTool" --output secrets-report.html
 ```
+
+### `config`
+
+Управляет постоянными настройками DotNetAuditTool.
+
+Использование:
+
+```powershell
+dotnet run --project DotNetAuditTool.CLI -- config set-threshold --entropy-threshold <value>
+
+dotnet run --project DotNetAuditTool.CLI -- config show
+
+dotnet-audit config set-threshold --entropy-threshold <value>
+dotnet-audit config show
+```
+
+Опции:
+- `--entropy-threshold`, `-e` — порог энтропии для постоянного хранения.
+
+Пример:
+
+```powershell
+dotnet run --project DotNetAuditTool.CLI -- config set-threshold --entropy-threshold 5.2
+
+dotnet-audit config show
+```
+
+## CI / Exit codes
+
+Команды возвращают ненулевой код выхода в случае критических проблем, что позволяет использовать утилиту в CI/CD-пайплайне.
+
+- `analyze` возвращает `1`, если найдены критические уязвимости или секреты, или в случае ошибки.
+- `check-vulns` возвращает `1`, если найдены критические или высокие уязвимости, или в случае ошибки.
+- `scan-secrets` возвращает `1`, если обнаружен высокий или критический уровень риска, или в случае ошибки.
+- `config` возвращает `0` при успешном сохранении/отображении настроек.
 
 ## Демонстрация
 

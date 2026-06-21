@@ -25,106 +25,110 @@ public static class GraphCommand
         command.AddOption(formatOption);
         command.AddOption(outputOption);
 
-        command.SetHandler(async (string path, string format, string? output) =>
+        command.SetHandler(ExecuteGraphCommand, pathArg, formatOption, outputOption);
+
+        return command;
+    }
+
+    private static async Task<int> ExecuteGraphCommand(string path, string format, string? output)
+    {
+        var console = new ConsoleOutputService();
+
+        var fullPath = Path.GetFullPath(path);
+
+        console.WriteHeader($"Building dependency graph for: {fullPath}");
+
+        try
         {
-            var console = new ConsoleOutputService();
+            var analyzer = new DependencyAnalyzer();
+            var graph = await analyzer.AnalyzeAsync(fullPath);
 
-            var fullPath = Path.GetFullPath(path);
+            console.WriteSuccess($"Built graph with {graph.Nodes.Count} nodes and {graph.Edges.Count} edges");
 
-            console.WriteHeader($"Building dependency graph for: {fullPath}");
-
-            try
+            var cycles = analyzer.FindCircularDependencies(graph);
+            if (cycles.Any())
             {
-                var analyzer = new DependencyAnalyzer();
-                var graph = await analyzer.AnalyzeAsync(fullPath);
-
-                console.WriteSuccess($"Built graph with {graph.Nodes.Count} nodes and {graph.Edges.Count} edges");
-
-                var cycles = analyzer.FindCircularDependencies(graph);
-                if (cycles.Any())
+                console.WriteWarning($"Found {cycles.Count} circular dependencies:");
+                foreach (var cycle in cycles.Take(5))
                 {
-                    console.WriteWarning($"Found {cycles.Count} circular dependencies:");
-                    foreach (var cycle in cycles.Take(5))
-                    {
-                        console.WriteInfo($"  {cycle}");
-                    }
+                    console.WriteInfo($"  {cycle}");
                 }
+            }
 
-                if (format == "mermaid")
+            if (format == "mermaid")
+            {
+                var mermaid = GenerateMermaidGraph(graph);
+                if (!string.IsNullOrEmpty(output))
                 {
-                    var mermaid = GenerateMermaidGraph(graph);
-                    if (!string.IsNullOrEmpty(output))
-                    {
-                        await File.WriteAllTextAsync(output, mermaid);
-                        console.WriteSuccess($"Mermaid graph saved to {output}");
-                    }
-                    else
-                    {
-                        Console.WriteLine(mermaid);
-                    }
-                }
-                else if (format == "json")
-                {
-                    IReportWriter<DependencyGraph> reportWriter;
-                    if (!string.IsNullOrEmpty(output))
-                    {
-                        reportWriter = ReportWriterFactory.CreateByExtension<DependencyGraph>(output);
-                    }
-                    else
-                    {
-                        reportWriter = ReportWriterFactory.CreateJson<DependencyGraph>();
-                    }
-
-                    var serializedGraph = reportWriter.Serialize(graph);
-
-                    if (!string.IsNullOrEmpty(output))
-                    {
-                        await reportWriter.WriteAsync(graph, output);
-                        console.WriteSuccess($"Graph saved to {output}");
-                    }
-                    else
-                    {
-                        Console.WriteLine(serializedGraph);
-                    }
+                    await File.WriteAllTextAsync(output, mermaid);
+                    console.WriteSuccess($"Mermaid graph saved to {output}");
                 }
                 else
                 {
-                    var rootNodes = graph.GetRootNodes();
-                    console.WriteInfo($"Root nodes: {string.Join(", ", rootNodes.Select(n => n.Name))}");
-
-                    var table = new Table();
-                    table.AddColumn("[cyan]Node[/]");
-                    table.AddColumn("[yellow]Type[/]");
-                    table.AddColumn("[green]Version/Framework[/]");
-                    table.AddColumn("[blue]Dependencies[/]");
-
-                    foreach (var node in graph.Nodes.Take(50))
-                    {
-                        var deps = graph.AdjacencyList.GetValueOrDefault(node.Id, new List<string>());
-                        table.AddRow(
-                            node.Name,
-                            node.Type.ToString(),
-                            node.Version ?? "N/A",
-                            deps.Count.ToString()
-                        );
-                    }
-
-                    AnsiConsole.Write(table);
-
-                    if (graph.Nodes.Count > 50)
-                    {
-                        console.WriteInfo($"... and {graph.Nodes.Count - 50} more nodes");
-                    }
+                    Console.WriteLine(mermaid);
                 }
             }
-            catch (Exception ex)
+            else if (format == "json")
             {
-                console.WriteError($"Failed to build graph: {ex.Message}");
-                Environment.ExitCode = 1;
-            }
-        }, pathArg, formatOption, outputOption);
+                IReportWriter<DependencyGraph> reportWriter;
+                if (!string.IsNullOrEmpty(output))
+                {
+                    reportWriter = ReportWriterFactory.CreateByExtension<DependencyGraph>(output);
+                }
+                else
+                {
+                    reportWriter = ReportWriterFactory.CreateJson<DependencyGraph>();
+                }
 
-        return command;
+                var serializedGraph = reportWriter.Serialize(graph);
+
+                if (!string.IsNullOrEmpty(output))
+                {
+                    await reportWriter.WriteAsync(graph, output);
+                    console.WriteSuccess($"Graph saved to {output}");
+                }
+                else
+                {
+                    Console.WriteLine(serializedGraph);
+                }
+            }
+            else
+            {
+                var rootNodes = graph.GetRootNodes();
+                console.WriteInfo($"Root nodes: {string.Join(", ", rootNodes.Select(n => n.Name))}");
+
+                var table = new Table();
+                table.AddColumn("[cyan]Node[/]");
+                table.AddColumn("[yellow]Type[/]");
+                table.AddColumn("[green]Version/Framework[/]");
+                table.AddColumn("[blue]Dependencies[/]");
+
+                foreach (var node in graph.Nodes.Take(50))
+                {
+                    var deps = graph.AdjacencyList.GetValueOrDefault(node.Id, new List<string>());
+                    table.AddRow(
+                        node.Name,
+                        node.Type.ToString(),
+                        node.Version ?? "N/A",
+                        deps.Count.ToString()
+                    );
+                }
+
+                AnsiConsole.Write(table);
+
+                if (graph.Nodes.Count > 50)
+                {
+                    console.WriteInfo($"... and {graph.Nodes.Count - 50} more nodes");
+                }
+            }
+
+            return 0;
+        }
+        catch (Exception ex)
+        {
+            console.WriteError($"Failed to build graph: {ex.Message}");
+            return 1;
+        }
     }
 
     private static string GenerateMermaidGraph(DependencyGraph graph)

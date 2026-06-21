@@ -11,13 +11,13 @@ public class SecretDetector
         _foundSecrets = new List<SecretMatch>();
     }
 
-    public async Task<SecretScanResult> ScanAsync(string targetPath, IEnumerable<string>? ignoreFilePaths = null)
+    public async Task<SecretScanResult> ScanAsync(string targetPath, IEnumerable<string>? ignoreFilePaths = null, double entropyThreshold = 4.5)
     {
         Console.WriteLine($"Starting secret scan on: {targetPath}");
 
         var secrets = new List<SecretMatch>();
 
-        var fileScanner = new FileScanner(ignoreFilePaths);
+        var fileScanner = new FileScanner(ignoreFilePaths, entropyThreshold);
 
         if (File.Exists(targetPath))
         {

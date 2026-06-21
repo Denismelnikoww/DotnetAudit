@@ -25,65 +25,68 @@ public static class CheckVulnerabilitiesCommand
 
         command.AddArgument(pathArg);
 
-        command.SetHandler(async (string path) =>
-        {
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                path = Environment.CurrentDirectory;
-            }
-
-            var console = new ConsoleOutputService();
-            console.WriteHeader($"Checking vulnerabilities for: {path}");
-
-            try
-            {
-                var analyzer = new DependencyAnalyzer();
-                var graph = await analyzer.AnalyzeAsync(path);
-                var projects = GetProjectsFromGraph(graph);
-
-                var scanner = new VulnerabilityScanner();
-                var report = await scanner.GenerateReportAsync(projects);
-
-                console.WriteVulnerabilityTable(report.Vulnerabilities);
-
-                console.WriteInfo($"Scanned {report.TotalPackages} packages across {report.TotalProjects} projects");
-                console.WriteInfo($"Found {report.Vulnerabilities.Count} vulnerable packages");
-
-                if (report.CriticalCount > 0)
-                    console.WriteError($"  - Critical: {report.CriticalCount}");
-                if (report.HighCount > 0)
-                    console.WriteWarning($"  - High: {report.HighCount}");
-                if (report.MediumCount > 0)
-                    console.WriteInfo($"  - Medium: {report.MediumCount}");
-                if (report.LowCount > 0)
-                    console.WriteInfo($"  - Low: {report.LowCount}");
-
-                var riskColor = report.RiskScore >= 70 ? "red" : report.RiskScore >= 40 ? "yellow" : "green";
-                console.WriteInfo($"Risk score: [{riskColor}]{report.RiskScore:F1}%[/]");
-
-                if (report.CriticalCount > 0)
-                {
-                    console.WriteError("Critical vulnerabilities found! Immediate action required.");
-                    Environment.ExitCode = 1;
-                }
-                else if (report.HighCount > 0)
-                {
-                    console.WriteWarning("High severity vulnerabilities found.");
-                    Environment.ExitCode = 1;
-                }
-                else
-                {
-                    console.WriteSuccess("No critical or high severity vulnerabilities found.");
-                }
-            }
-            catch (Exception ex)
-            {
-                console.WriteError($"Vulnerability check failed: {ex.Message}");
-                Environment.ExitCode = 1;
-            }
-        }, pathArg);
+        command.SetHandler(ExecuteCheckVulnerabilitiesCommand, pathArg);
 
         return command;
+    }
+
+    private static async Task<int> ExecuteCheckVulnerabilitiesCommand(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            path = Environment.CurrentDirectory;
+        }
+
+        var console = new ConsoleOutputService();
+        console.WriteHeader($"Checking vulnerabilities for: {path}");
+
+        try
+        {
+            var analyzer = new DependencyAnalyzer();
+            var graph = await analyzer.AnalyzeAsync(path);
+            var projects = GetProjectsFromGraph(graph);
+
+            var scanner = new VulnerabilityScanner();
+            var report = await scanner.GenerateReportAsync(projects);
+
+            console.WriteVulnerabilityTable(report.Vulnerabilities);
+
+            console.WriteInfo($"Scanned {report.TotalPackages} packages across {report.TotalProjects} projects");
+            console.WriteInfo($"Found {report.Vulnerabilities.Count} vulnerable packages");
+
+            if (report.CriticalCount > 0)
+                console.WriteError($"  - Critical: {report.CriticalCount}");
+            if (report.HighCount > 0)
+                console.WriteWarning($"  - High: {report.HighCount}");
+            if (report.MediumCount > 0)
+                console.WriteInfo($"  - Medium: {report.MediumCount}");
+            if (report.LowCount > 0)
+                console.WriteInfo($"  - Low: {report.LowCount}");
+
+            var riskColor = report.RiskScore >= 70 ? "red" : report.RiskScore >= 40 ? "yellow" : "green";
+            console.WriteInfo($"Risk score: [{riskColor}]{report.RiskScore:F1}%[/]");
+
+            if (report.CriticalCount > 0)
+            {
+                console.WriteError("Critical vulnerabilities found! Immediate action required.");
+                return 1;
+            }
+            else if (report.HighCount > 0)
+            {
+                console.WriteWarning("High severity vulnerabilities found.");
+                return 1;
+            }
+            else
+            {
+                console.WriteSuccess("No critical or high severity vulnerabilities found.");
+                return 0;
+            }
+        }
+        catch (Exception ex)
+        {
+            console.WriteError($"Vulnerability check failed: {ex.Message}");
+            return 1;
+        }
     }
 
     private static List<ProjectInfo> GetProjectsFromGraph(DependencyGraph graph)

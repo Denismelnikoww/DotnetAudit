@@ -9,9 +9,11 @@ public class FileScanner
         private readonly HashSet<string> _ignoreFileNames;
     private readonly List<string> _allowedExtensions;
     private readonly List<string> _ignoreDirectories;
+    private readonly double _entropyThreshold;
 
-    public FileScanner(IEnumerable<string>? ignoreFileNames = null)
+    public FileScanner(IEnumerable<string>? ignoreFileNames = null, double entropyThreshold = 4.5)
     {
+        _entropyThreshold = entropyThreshold;
         _ignorePatterns = new List<string>
         {
             "*.exe", "*.dll", "*.pdb", "*.bin", "*.obj",
@@ -166,7 +168,7 @@ public class FileScanner
                     secretValue = match.Value;
 
                 var entropy = EntropyAnalyzer.CalculateShannonEntropy(secretValue);
-                var isSuspicious = EntropyAnalyzer.IsSuspiciousSecret(secretValue, secretType);
+                var isSuspicious = EntropyAnalyzer.IsSuspiciousSecret(secretValue, secretType, _entropyThreshold);
                 var hasRepeatPatterns = EntropyAnalyzer.HasRepeatPatterns(secretValue);
 
                 if (IsFalsePositive(secretValue, line, secretType))

@@ -25,65 +25,68 @@ public static class CheckVersionsCommand
 
         command.AddArgument(pathArg);
 
-        command.SetHandler(async (string path) =>
-        {
-            if (string.IsNullOrWhiteSpace(path))
-            {
-                path = Environment.CurrentDirectory;
-            }
-
-            var console = new ConsoleOutputService();
-            console.WriteHeader($"Checking versions for: {path}");
-
-            try
-            {
-                var analyzer = new DependencyAnalyzer();
-                var graph = await analyzer.AnalyzeAsync(path);
-
-                var versionChecker = new VersionCompatibilityChecker();
-                var projectCompatibilityChecker = new ProjectReferenceCompatibilityChecker();
-                var projects = GetProjectsFromGraph(graph);
-
-                var allIssues = new List<VersionIssue>();
-                foreach (var project in projects)
-                {
-                    var issues = await versionChecker.CheckPackagesAsync(project);
-                    allIssues.AddRange(issues);
-                }
-
-                var projectCompatibilityIssues = projectCompatibilityChecker.CheckProjectReferences(projects);
-                console.WriteVersionIssuesTable(allIssues);
-                console.WriteHeader("PROJECT COMPATIBILITY");
-                console.WriteProjectCompatibilityTable(projectCompatibilityIssues);
-
-                var projectCompatibilityCount = projectCompatibilityIssues.Count;
-                var outdated = allIssues.Count(i => i.IsOutdated);
-                var majorUpdates = allIssues.Count(i => i.Difference == VersionDifference.Major);
-                var minorUpdates = allIssues.Count(i => i.Difference == VersionDifference.Minor);
-                var patchUpdates = allIssues.Count(i => i.Difference == VersionDifference.Patch);
-
-                console.WriteInfo($"Summary: {outdated} outdated packages, {projectCompatibilityCount} project compatibility issues");
-                console.WriteInfo($"  - Major updates: {majorUpdates}");
-                console.WriteInfo($"  - Minor updates: {minorUpdates}");
-                console.WriteInfo($"  - Patch updates: {patchUpdates}");
-
-                if (outdated == 0)
-                {
-                    console.WriteSuccess("All packages are up to date!");
-                }
-                else
-                {
-                    Environment.ExitCode = 1;
-                }
-            }
-            catch (Exception ex)
-            {
-                console.WriteError($"Version check failed: {ex.Message}");
-                Environment.ExitCode = 1;
-            }
-        }, pathArg);
+        command.SetHandler(ExecuteCheckVersionsCommand, pathArg);
 
         return command;
+    }
+
+    private static async Task<int> ExecuteCheckVersionsCommand(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            path = Environment.CurrentDirectory;
+        }
+
+        var console = new ConsoleOutputService();
+        console.WriteHeader($"Checking versions for: {path}");
+
+        try
+        {
+            var analyzer = new DependencyAnalyzer();
+            var graph = await analyzer.AnalyzeAsync(path);
+
+            var versionChecker = new VersionCompatibilityChecker();
+            var projectCompatibilityChecker = new ProjectReferenceCompatibilityChecker();
+            var projects = GetProjectsFromGraph(graph);
+
+            var allIssues = new List<VersionIssue>();
+            foreach (var project in projects)
+            {
+                var issues = await versionChecker.CheckPackagesAsync(project);
+                allIssues.AddRange(issues);
+            }
+
+            var projectCompatibilityIssues = projectCompatibilityChecker.CheckProjectReferences(projects);
+            console.WriteVersionIssuesTable(allIssues);
+            console.WriteHeader("PROJECT COMPATIBILITY");
+            console.WriteProjectCompatibilityTable(projectCompatibilityIssues);
+
+            var projectCompatibilityCount = projectCompatibilityIssues.Count;
+            var outdated = allIssues.Count(i => i.IsOutdated);
+            var majorUpdates = allIssues.Count(i => i.Difference == VersionDifference.Major);
+            var minorUpdates = allIssues.Count(i => i.Difference == VersionDifference.Minor);
+            var patchUpdates = allIssues.Count(i => i.Difference == VersionDifference.Patch);
+
+            console.WriteInfo($"Summary: {outdated} outdated packages, {projectCompatibilityCount} project compatibility issues");
+            console.WriteInfo($"  - Major updates: {majorUpdates}");
+            console.WriteInfo($"  - Minor updates: {minorUpdates}");
+            console.WriteInfo($"  - Patch updates: {patchUpdates}");
+
+            if (outdated == 0)
+            {
+                console.WriteSuccess("All packages are up to date!");
+                return 0;
+            }
+            else
+            {
+                return 1;
+            }
+        }
+        catch (Exception ex)
+        {
+            console.WriteError($"Version check failed: {ex.Message}");
+            return 1;
+        }
     }
 
     private static List<ProjectInfo> GetProjectsFromGraph(DependencyGraph graph)
