@@ -93,7 +93,6 @@ public class OSSIndexClient
             Description = vuln.Description ?? string.Empty,
             PublishedDate = vuln.PublishedDate ?? DateTime.UtcNow,
             References = vuln.References ?? new List<string>(),
-            AffectedVersions = GetAffectedVersions(vuln)
         };
     }
 
@@ -118,13 +117,5 @@ public class OSSIndexClient
                 return match.Groups[1].Value;
         }
         return null;
-    }
-
-    private List<string> GetAffectedVersions(OssVulnerability vuln)
-    {
-        var versions = new List<string>();
-        // Здесь можно парсить affected version ranges из описания
-        // Для простоты возвращаем пустой список
-        return versions;
     }
 }
