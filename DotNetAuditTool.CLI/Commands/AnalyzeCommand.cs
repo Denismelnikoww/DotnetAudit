@@ -1,10 +1,10 @@
 ﻿using DotNetAuditTool.CLI.Reporters;
 using DotNetAuditTool.CLI.Services;
 using DotNetAuditTool.Core.Models;
+using DotNetAuditTool.DependencyGraphBuilder;
 using DotNetAuditTool.Secrets;
 using DotNetAuditTool.Security;
 using DotNetAuditTool.VersionChecker;
-using DotNetAuditTool.DependencyGraphBuilder;
 using Spectre.Console;
 using System.CommandLine;
 
@@ -53,11 +53,13 @@ public static class AnalyzeCommand
         try
         {
             console.WriteInfo("Building dependency graph...");
+
             var graphBuilder = new DependencyAnalyzer();
             var graph = await graphBuilder.AnalyzeAsync(path);
+
             console.WriteSuccess($"Found {graph.Nodes.Count} dependency nodes");
 
-            var projects = GetProjectsFromGraph(graph);
+            var projects = graphBuilder.GetProjectsFromGraph(graph);
             console.WriteInfo($"Found {projects.Count} projects to analyze");
 
             console.WriteInfo("Checking version compatibility...");
@@ -81,9 +83,6 @@ public static class AnalyzeCommand
             var outdatedCount = versionIssues.Count(i => i.IsOutdated);
             var compatibilityIssueCount = versionIssues.Count(i => !i.IsCompatible) + projectCompatibilityIssues.Count;
             console.WriteSuccess($"Found {outdatedCount} outdated packages and {compatibilityIssueCount} compatibility issues");
-
-            console.WriteHeader("PROJECT COMPATIBILITY");
-            console.WriteProjectCompatibilityTable(projectCompatibilityIssues);
 
             console.WriteInfo("Scanning for vulnerabilities...");
             var vulnScanner = new VulnerabilityScanner();
@@ -183,62 +182,6 @@ public static class AnalyzeCommand
         }
     }
 
-    private static List<ProjectInfo> GetProjectsFromGraph(DependencyGraph graph)
-    {
-        var projects = new List<ProjectInfo>();
-
-        foreach (var node in graph.Nodes.Where(n => n.Type == DependencyType.ProjectReference))
-        {
-            if (node.Metadata.TryGetValue("Path", out var path))
-            {
-                var project = new ProjectInfo
-                {
-                    Name = node.Name,
-                    FilePath = path.ToString() ?? string.Empty,
-                    TargetFramework = node.Metadata.TryGetValue("TargetFramework", out var tf) 
-                        ? tf.ToString() ?? node.Version 
-                        : node.Version
-                };
-
-                foreach (var depId in node.DependencyIds)
-                {
-                    var depNode = graph.Nodes.FirstOrDefault(n => n.Id == depId);
-                    if (depNode == null)
-                        continue;
-
-                    if (depNode.Type == DependencyType.NuGet)
-                    {
-                        project.Packages.Add(new PackageReference
-                        {
-                            Name = depNode.Name,
-                            Version = depNode.Version,
-                            IsDevelopmentDependency = depNode.Metadata.ContainsKey("IsDevelopmentDependency") && 
-                                                    (bool)depNode.Metadata["IsDevelopmentDependency"],
-                            IsPrivateAssets = depNode.Metadata.ContainsKey("IsPrivateAssets") && 
-                                             (bool)depNode.Metadata["IsPrivateAssets"]
-                        });
-                    }
-                    else if (depNode.Type == DependencyType.ProjectReference)
-                    {
-                        var referencePath = depNode.Metadata.TryGetValue("Path", out var refPath) ? refPath?.ToString() ?? string.Empty : string.Empty;
-                        if (!string.IsNullOrWhiteSpace(referencePath))
-                        {
-                            project.ProjectReferences.Add(new ProjectReference
-                            {
-                                Name = depNode.Name,
-                                Path = referencePath,
-                                RelativePath = referencePath
-                            });
-                        }
-                    }
-                }
-
-                projects.Add(project);
-            }
-        }
-
-        return projects;
-    }
 
     private static double CalculateCriticalityScore(List<Vulnerability> vulnerabilities, List<SecretMatch> secrets)
     {

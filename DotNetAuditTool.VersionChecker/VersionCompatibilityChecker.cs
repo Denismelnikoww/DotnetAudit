@@ -1,6 +1,5 @@
 ﻿using DotNetAuditTool.Core.Models;
 using DotNetAuditTool.Core.Utils;
-using DotNetAuditTool.VersionChecker.Models;
 using NuGet.Versioning;
 
 namespace DotNetAuditTool.VersionChecker;
@@ -101,17 +100,5 @@ public class VersionCompatibilityChecker
             VersionDifference.Patch => $"Patch update available for {package.Name}: {package.Version} → {latestVersion}",
             _ => $"Update available: {package.Name} {package.Version} → {latestVersion}"
         };
-    }
-
-    private UpdatePriority CalculatePriority(PackageUpdateReport report)
-    {
-        if (report.MajorUpdates > 0)
-            return UpdatePriority.High;
-        if (report.MinorUpdates > 0 && report.MinorUpdates > report.TotalPackages * 0.3)
-            return UpdatePriority.Medium;
-        if (report.PatchUpdates > 0)
-            return UpdatePriority.Low;
-
-        return UpdatePriority.None;
     }
 }

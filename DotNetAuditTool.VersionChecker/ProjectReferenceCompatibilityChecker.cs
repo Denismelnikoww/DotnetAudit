@@ -4,12 +4,7 @@ namespace DotNetAuditTool.VersionChecker;
 
 public class ProjectReferenceCompatibilityChecker
 {
-    private readonly FrameworkCompatibility _frameworkCompatibility;
-
-    public ProjectReferenceCompatibilityChecker()
-    {
-        _frameworkCompatibility = new FrameworkCompatibility();
-    }
+    private readonly FrameworkCompatibility _frameworkCompatibility = new();
 
     public List<ProjectCompatibilityIssue> CheckProjectReferences(List<ProjectInfo> projects)
     {
@@ -30,18 +25,23 @@ public class ProjectReferenceCompatibilityChecker
                     continue;
 
                 if (!projectByPath.TryGetValue(projectReference.Path, out var referencedProject))
+                {
+                    issues.Add(new ProjectCompatibilityIssue
+                    {
+                        ProjectName = project.Name,
+                        ProjectPath = project.FilePath,
+                        ProjectTargetFramework = projectFramework,
+                        ReferencedProjectName = projectReference.Name,
+                        ReferencedProjectPath = projectReference.Path,
+                        ReferencedTargetFramework = "Unknown",
+                        IsCompatible = false,
+                        Suggestion = $"Referenced project '{projectReference.Name}' not found in the dependency graph. Check the project reference path."
+                    });
                     continue;
+                }
 
                 var referencedFramework = GetEffectiveFramework(referencedProject);
                 if (string.IsNullOrWhiteSpace(referencedFramework))
-                    continue;
-
-                var normalizedReferencedFramework = NormalizeFramework(referencedFramework);
-                var compatibleFrameworks = _frameworkCompatibility.GetCompatibleChain(projectFramework)
-                    .Select(NormalizeFramework)
-                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-                if (!compatibleFrameworks.Contains(normalizedReferencedFramework))
                 {
                     issues.Add(new ProjectCompatibilityIssue
                     {
@@ -50,15 +50,36 @@ public class ProjectReferenceCompatibilityChecker
                         ProjectTargetFramework = projectFramework,
                         ReferencedProjectName = referencedProject.Name,
                         ReferencedProjectPath = referencedProject.FilePath,
-                        ReferencedTargetFramework = referencedFramework,
+                        ReferencedTargetFramework = "Unknown",
                         IsCompatible = false,
-                        Suggestion = $"Project {project.Name} ({projectFramework}) cannot reference project {referencedProject.Name} ({referencedFramework}). " +
-                                     "Use a compatible target framework or multi-target the referenced project."
+                        Suggestion = $"Referenced project '{referencedProject.Name}' has no target framework specified."
                     });
+                    continue;
                 }
+
+                var normalizedReferencedFramework = NormalizeFramework(referencedFramework);
+                var compatibleFrameworks = _frameworkCompatibility.GetCompatibleChain(projectFramework)
+                    .Select(NormalizeFramework)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                var isCompatible = compatibleFrameworks.Contains(normalizedReferencedFramework);
+
+                issues.Add(new ProjectCompatibilityIssue
+                {
+                    ProjectName = project.Name,
+                    ProjectPath = project.FilePath,
+                    ProjectTargetFramework = projectFramework,
+                    ReferencedProjectName = referencedProject.Name,
+                    ReferencedProjectPath = referencedProject.FilePath,
+                    ReferencedTargetFramework = referencedFramework,
+                    IsCompatible = isCompatible,
+                    Suggestion = isCompatible
+                        ? $"✓ Compatible: {projectFramework} can reference {referencedFramework}"
+                        : $"✗ Incompatible: Project {project.Name} ({projectFramework}) cannot reference project {referencedProject.Name} ({referencedFramework}). " +
+                          "Use a compatible target framework or multi-target the referenced project."
+                });
             }
         }
-
         return issues;
     }
 

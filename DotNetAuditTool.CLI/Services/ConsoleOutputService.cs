@@ -152,7 +152,7 @@ public class ConsoleOutputService
                 issue.ProjectName,
                 issue.ProjectTargetFramework,
                 $"{issue.ReferencedProjectName} ({issue.ReferencedTargetFramework})",
-                "[red]No[/]",
+                issue.IsCompatible ? "[green]Yes[/]" : "[red]No[/]",
                 issue.Suggestion ?? string.Empty
             );
         }
