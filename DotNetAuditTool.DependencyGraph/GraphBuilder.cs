@@ -67,12 +67,14 @@ public class GraphBuilder
 
         foreach (var project in projects)
         {
-            var projectNode = nodeDict.Values.First(n => n.Name == project.Name);
+            if (!nodeDict.TryGetValue(project.FilePath, out var projectNode))
+                continue;
 
             foreach (var package in project.Packages)
             {
                 var packageNode = GetOrCreatePackageNode(nodeDict, package);
-                graph.Nodes.Add(packageNode);
+                if (!graph.Nodes.Contains(packageNode))
+                    graph.Nodes.Add(packageNode);
 
                 projectNode.Dependencies.Add(packageNode);
                 projectNode.DependencyIds.Add(packageNode.Id);
@@ -92,10 +94,9 @@ public class GraphBuilder
 
             foreach (var projectRef in project.ProjectReferences)
             {
-                if (_projectCache.TryGetValue(projectRef.Path, out var referencedProject))
+                if (_projectCache.TryGetValue(projectRef.Path, out var referencedProject) &&
+                    nodeDict.TryGetValue(referencedProject.FilePath, out var refNode))
                 {
-                    var refNode = nodeDict.Values.First(n => n.Name == referencedProject.Name);
-
                     projectNode.Dependencies.Add(refNode);
                     projectNode.DependencyIds.Add(refNode.Id);
 
@@ -122,6 +123,7 @@ public class GraphBuilder
     {
         return new DependencyNode
         {
+            Id = project.FilePath,
             Name = project.Name,
             Version = project.TargetFramework,
             Type = DependencyType.ProjectReference,

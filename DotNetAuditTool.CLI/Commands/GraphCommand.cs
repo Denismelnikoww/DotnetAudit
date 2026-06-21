@@ -130,21 +130,48 @@ public static class GraphCommand
     private static string GenerateMermaidGraph(DependencyGraph graph)
     {
         var mermaid = "graph TD\n";
+        mermaid += "    classDef projectNode fill:#A3BE8C,stroke:#2E3440,color:#2E3440,stroke-width:2px;\n";
+        mermaid += "    classDef packageNode fill:#88C0D0,stroke:#2E3440,color:#2E3440,stroke-width:2px;\n\n";
 
-        foreach (var edge in graph.Edges.Take(100)) // Limit for readability
+        foreach (var node in graph.Nodes)
+        {
+            var nodeId = GetMermaidNodeId(node);
+            var label = EscapeMermaidText(node.Name);
+            if (!string.IsNullOrEmpty(node.Version))
+            {
+                label += $"<br/>" + EscapeMermaidText(node.Version);
+            }
+
+            mermaid += $"    {nodeId}[{label}]\n";
+
+            if (node.Type == DependencyType.ProjectReference)
+                mermaid += $"    class {nodeId} projectNode;\n";
+            else if (node.Type == DependencyType.NuGet)
+                mermaid += $"    class {nodeId} packageNode;\n";
+        }
+
+        mermaid += "\n";
+
+        foreach (var edge in graph.Edges)
         {
             var sourceNode = graph.Nodes.FirstOrDefault(n => n.Id == edge.Source);
             var targetNode = graph.Nodes.FirstOrDefault(n => n.Id == edge.Target);
 
             if (sourceNode != null && targetNode != null)
             {
-                var sourceLabel = SanitizeMermaidLabel(sourceNode.Name);
-                var targetLabel = SanitizeMermaidLabel(targetNode.Name);
-                mermaid += $"    {sourceLabel}[{EscapeMermaidText(sourceNode.Name)}] --> {targetLabel}[{EscapeMermaidText(targetNode.Name)}]\n";
+                var sourceId = GetMermaidNodeId(sourceNode);
+                var targetId = GetMermaidNodeId(targetNode);
+                mermaid += $"    {sourceId} --> {targetId}\n";
             }
         }
 
         return mermaid;
+    }
+
+    private static string GetMermaidNodeId(DependencyNode node)
+    {
+        var prefix = node.Type == DependencyType.NuGet ? "pkg_" : "proj_";
+        return prefix + SanitizeMermaidLabel(node.Id ?? node.Name);
     }
 
     private static string SanitizeMermaidLabel(string name)
@@ -154,7 +181,9 @@ public static class GraphCommand
             .Replace('.', '_')
             .Replace('-', '_')
             .Replace('/', '_')
-            .Replace('\\', '_');
+            .Replace('\\', '_')
+            .Replace(':', '_')
+            .Replace('@', '_');
     }
 
     private static string EscapeMermaidText(string text)
