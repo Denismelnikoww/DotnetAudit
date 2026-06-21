@@ -5,18 +5,18 @@ namespace DotNetAuditTool.DependencyGraphBuilder;
 
 public class GraphBuilder
 {
-    private readonly CsProjParser _csProjParser;
+    private readonly ProjectFileParser _projectFileParser;
     private readonly Dictionary<string, ProjectInfo> _projectCache;
 
     public GraphBuilder()
     {
-        _csProjParser = new CsProjParser();
+        _projectFileParser = new ProjectFileParser();
         _projectCache = new Dictionary<string, ProjectInfo>();
     }
 
     public async Task<DependencyGraph> BuildFromProjectAsync(string csprojPath)
     {
-        var project = await _csProjParser.ParseAsync(csprojPath);
+        var project = await _projectFileParser.ParseAsync(csprojPath);
         return await BuildGraphAsync(new List<ProjectInfo> { project });
     }
 
@@ -29,14 +29,18 @@ public class GraphBuilder
 
     public async Task<DependencyGraph> BuildFromDirectoryAsync(string directoryPath)
     {
-        var csprojFiles = Directory.GetFiles(directoryPath, "*.csproj", SearchOption.AllDirectories);
+        var projectFiles = new List<string>();
+        projectFiles.AddRange(Directory.GetFiles(directoryPath, "*.csproj", SearchOption.AllDirectories));
+        projectFiles.AddRange(Directory.GetFiles(directoryPath, "*.vbproj", SearchOption.AllDirectories));
+        projectFiles.AddRange(Directory.GetFiles(directoryPath, "*.fsproj", SearchOption.AllDirectories));
+
         var projects = new List<ProjectInfo>();
 
-        foreach (var csproj in csprojFiles)
+        foreach (var csproj in projectFiles.Distinct(StringComparer.OrdinalIgnoreCase))
         {
             try
             {
-                var project = await _csProjParser.ParseAsync(csproj);
+                var project = await _projectFileParser.ParseAsync(csproj);
                 projects.Add(project);
             }
             catch (Exception ex)

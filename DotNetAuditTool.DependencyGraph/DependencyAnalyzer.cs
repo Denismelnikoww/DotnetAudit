@@ -16,7 +16,7 @@ public class DependencyAnalyzer
         if (File.Exists(targetPath))
         {
             var extension = Path.GetExtension(targetPath).ToLower();
-            if (extension == ".csproj")
+            if (extension == ".csproj" || extension == ".vbproj" || extension == ".fsproj")
             {
                 return await _graphBuilder.BuildFromProjectAsync(targetPath);
             }

@@ -43,7 +43,7 @@ dotnet-audit analyze <path> [--output|-o <file>] [--verbose|-v]
 ```
 
 Аргументы:
-- `<path>` — путь к `.csproj`, `.sln`, `.slnx` или директории.
+- `<path>` — путь к `.csproj`, `.vbproj`, `.fsproj`, `.sln`, `.slnx` или директории.
 
 Опции:
 - `--output`, `-o` — путь к файлу для сохранения отчёта. Формат определяется по расширению: `.json` или `.html`.
@@ -118,7 +118,7 @@ dotnet-audit check-versions <path>
 ```
 
 Аргументы:
-- `<path>` — путь к `.csproj`, `.sln`, `.slnx` или директории.
+- `<path>` — путь к `.csproj`, `.vbproj`, `.fsproj`, `.sln`, `.slnx` или директории.
 
 Пример:
 
@@ -141,7 +141,7 @@ dotnet-audit check-vulns <path>
 ```
 
 Аргументы:
-- `<path>` — путь к `.csproj`, `.sln`, `.slnx` или директории.
+- `<path>` — путь к `.csproj`, `.vbproj`, `.fsproj`, `.sln`, `.slnx` или директории.
 
 Пример:
 

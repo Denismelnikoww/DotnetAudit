@@ -14,8 +14,8 @@ public static class GraphCommand
     {
         var command = new Command("graph", "Build and visualize dependency graph");
 
-        var pathArg = new Argument<string>("path", () => ".",
-            "Path to .csproj, .sln file or directory (defaults to current directory)");
+            var pathArg = new Argument<string>("path", () => ".",
+            "Path to .csproj, .vbproj, .fsproj, .sln file or directory (defaults to current directory)");
 
         var formatOption = new Option<string>(["--format", "-f"], () => "console",
             "Output format: console, mermaid, json");

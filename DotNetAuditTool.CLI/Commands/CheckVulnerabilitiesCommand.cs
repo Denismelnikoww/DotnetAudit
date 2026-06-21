@@ -12,7 +12,7 @@ public static class CheckVulnerabilitiesCommand
     {
         var command = new Command("check-vulns", "Check for security vulnerabilities in packages");
 
-        var pathArg = new Argument<string>("path", "Path to .csproj, .sln file or directory");
+        var pathArg = new Argument<string>("path", "Path to .csproj, .vbproj, .fsproj, .sln file or directory");
         pathArg.AddValidator(result =>
         {
             var pathVal = result.GetValueOrDefault<string>();

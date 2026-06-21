@@ -16,7 +16,7 @@ public static class AnalyzeCommand
     {
         var command = new Command("analyze", "Perform complete audit of .NET project");
 
-        var pathArg = new Argument<string>("path", "Path to .csproj, .sln file or directory");
+        var pathArg = new Argument<string>("path", "Path to .csproj, .vbproj, .fsproj, .sln file or directory");
         pathArg.AddValidator(result =>
         {
             var pathVal = result.GetValueOrDefault<string>();

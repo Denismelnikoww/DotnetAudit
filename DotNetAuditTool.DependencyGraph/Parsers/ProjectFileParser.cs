@@ -1,17 +1,17 @@
-﻿using System.Xml;
+using System.Xml;
 using DotNetAuditTool.Core.Models;
 
 namespace DotNetAuditTool.DependencyGraphBuilder.Parsers;
 
-public class CsProjParser
+public class ProjectFileParser
 {
-    public async Task<ProjectInfo> ParseAsync(string csprojPath)
+    public async Task<ProjectInfo> ParseAsync(string projectPath)
     {
-        if (!File.Exists(csprojPath))
-            throw new FileNotFoundException($"Project file not found: {csprojPath}");
+        if (!File.Exists(projectPath))
+            throw new FileNotFoundException($"Project file not found: {projectPath}");
 
-        var content = await File.ReadAllTextAsync(csprojPath);
-        return Parse(content, csprojPath);
+        var content = await File.ReadAllTextAsync(projectPath);
+        return Parse(content, projectPath);
     }
 
     public ProjectInfo Parse(string content, string filePath)

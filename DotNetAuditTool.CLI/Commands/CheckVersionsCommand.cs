@@ -12,7 +12,7 @@ public static class CheckVersionsCommand
     {
         var command = new Command("check-versions", "Check for outdated packages and version compatibility");
 
-        var pathArg = new Argument<string>("path", "Path to .csproj, .sln file or directory");
+        var pathArg = new Argument<string>("path", "Path to .csproj, .vbproj, .fsproj, .sln file or directory");
         pathArg.AddValidator(result =>
         {
             var pathVal = result.GetValueOrDefault<string>();

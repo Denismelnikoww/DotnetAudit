@@ -24,13 +24,15 @@ public class SolutionParser
         var projects = new List<ProjectInfo>();
         var matches = ProjectRegex.Matches(content);
 
-        var csProjParser = new CsProjParser();
+        var projectParser = new ProjectFileParser();
 
         foreach (Match match in matches)
         {
             var relativePath = match.Groups["path"].Value;
 
-            if (!relativePath.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase))
+            if (!relativePath.EndsWith(".csproj", StringComparison.OrdinalIgnoreCase)
+                && !relativePath.EndsWith(".vbproj", StringComparison.OrdinalIgnoreCase)
+                && !relativePath.EndsWith(".fsproj", StringComparison.OrdinalIgnoreCase))
                 continue;
 
             var fullPath = Path.GetFullPath(Path.Combine(solutionDirectory, relativePath));
@@ -39,7 +41,7 @@ public class SolutionParser
             {
                 try
                 {
-                    var projectInfo = csProjParser.ParseAsync(fullPath).Result;
+                    var projectInfo = projectParser.ParseAsync(fullPath).Result;
                     projects.Add(projectInfo);
                 }
                 catch (Exception ex)
