@@ -37,6 +37,10 @@ public class CsProjParser
         {
             var frameworks = targetFrameworksNode.InnerText.Split(';');
             projectInfo.TargetFrameworks.AddRange(frameworks);
+            if (string.IsNullOrWhiteSpace(projectInfo.TargetFramework) && projectInfo.TargetFrameworks.Any())
+            {
+                projectInfo.TargetFramework = projectInfo.TargetFrameworks.First();
+            }
         }
 
         var packageNodes = doc.SelectNodes("//Project/ItemGroup/PackageReference");

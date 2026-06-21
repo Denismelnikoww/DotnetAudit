@@ -90,9 +90,11 @@ public class ConsoleOutputService
 
     public void WriteVersionIssuesTable(List<VersionIssue> issues)
     {
-        if (!issues.Any())
+        var displayIssues = issues.Where(i => i.IsOutdated || !i.IsCompatible || !string.IsNullOrWhiteSpace(i.Suggestion)).ToList();
+
+        if (!displayIssues.Any())
         {
-            WriteSuccess("All packages are up to date!");
+            WriteSuccess("All packages are up to date and compatible!");
             return;
         }
 
@@ -101,9 +103,10 @@ public class ConsoleOutputService
         table.AddColumn("[cyan]Current[/]");
         table.AddColumn("[green]Latest[/]");
         table.AddColumn("[blue]Difference[/]");
+        table.AddColumn("[magenta]Compatible[/]");
         table.AddColumn("[white]Suggestion[/]");
 
-        foreach (var issue in issues.Where(i => i.IsOutdated))
+        foreach (var issue in displayIssues)
         {
             var diffColor = issue.Difference switch
             {
@@ -112,12 +115,45 @@ public class ConsoleOutputService
                 _ => "blue"
             };
 
+            var compatibilityText = issue.IsCompatible ? "Yes" : "No";
+            var compatibilityColor = issue.IsCompatible ? "green" : "red";
+
             table.AddRow(
                 issue.PackageName,
                 issue.CurrentVersion,
                 issue.LatestVersion ?? "N/A",
                 $"[{diffColor}]{issue.Difference}[/]",
+                $"[{compatibilityColor}]{compatibilityText}[/]",
                 issue.Suggestion ?? ""
+            );
+        }
+
+        AnsiConsole.Write(table);
+    }
+
+    public void WriteProjectCompatibilityTable(List<ProjectCompatibilityIssue> issues)
+    {
+        if (!issues.Any())
+        {
+            WriteSuccess("All project references are compatible.");
+            return;
+        }
+
+        var table = new Table();
+        table.AddColumn("[yellow]Project[/]");
+        table.AddColumn("[cyan]Target Framework[/]");
+        table.AddColumn("[green]References[/]");
+        table.AddColumn("[magenta]Compatible[/]");
+        table.AddColumn("[white]Suggestion[/]");
+
+        foreach (var issue in issues)
+        {
+            table.AddRow(
+                issue.ProjectName,
+                issue.ProjectTargetFramework,
+                $"{issue.ReferencedProjectName} ({issue.ReferencedTargetFramework})",
+                "[red]No[/]",
+                issue.Suggestion ?? string.Empty
             );
         }
 

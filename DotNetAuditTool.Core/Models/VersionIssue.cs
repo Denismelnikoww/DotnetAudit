@@ -9,5 +9,6 @@ public class VersionIssue
     public VersionDifference Difference { get; set; }
     public bool IsOutdated { get; set; }
     public bool HasBreakingChanges { get; set; }
+    public bool IsCompatible { get; set; } = true;
     public string? Suggestion { get; set; }
 }

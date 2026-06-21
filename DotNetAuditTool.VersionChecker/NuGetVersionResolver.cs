@@ -2,6 +2,8 @@
 
 using NuGet.Common;
 using NuGet.Configuration;
+using NuGet.Frameworks;
+using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 
@@ -10,6 +12,8 @@ public class NuGetVersionResolver
 {
     private readonly SourceRepository _repository;
     private readonly ILogger _logger;
+
+    public ILogger Logger => _logger;
 
     public NuGetVersionResolver(string sourceUrl = "https://api.nuget.org/v3/index.json")
     {
@@ -50,6 +54,11 @@ public class NuGetVersionResolver
     public async Task<NuGetVersion?> GetLatestStableVersionAsync(string packageName)
     {
         return await GetLatestVersionAsync(packageName, false);
+    }
+
+    public async Task<PackageMetadataResource> GetPackageMetadataResourceAsync()
+    {
+        return await _repository.GetResourceAsync<PackageMetadataResource>();
     }
 
     public async Task<List<NuGetVersion>> GetVersionHistoryAsync(string packageName, int maxVersions = 10)

@@ -57,6 +57,7 @@ public static class AnalyzeCommand
 
                 console.WriteInfo("Checking version compatibility...");
                 var versionChecker = new VersionCompatibilityChecker();
+                var projectCompatibilityChecker = new ProjectReferenceCompatibilityChecker();
                 var versionIssues = new List<VersionIssue>();
 
                 await AnsiConsole.Progress()
@@ -71,7 +72,13 @@ public static class AnalyzeCommand
                         }
                     });
 
-                console.WriteSuccess($"Found {versionIssues.Count(i => i.IsOutdated)} outdated packages");
+                var projectCompatibilityIssues = projectCompatibilityChecker.CheckProjectReferences(projects);
+                var outdatedCount = versionIssues.Count(i => i.IsOutdated);
+                var compatibilityIssueCount = versionIssues.Count(i => !i.IsCompatible) + projectCompatibilityIssues.Count;
+                console.WriteSuccess($"Found {outdatedCount} outdated packages and {compatibilityIssueCount} compatibility issues");
+
+                console.WriteHeader("PROJECT COMPATIBILITY");
+                console.WriteProjectCompatibilityTable(projectCompatibilityIssues);
 
                 console.WriteInfo("Scanning for vulnerabilities...");
                 var vulnScanner = new VulnerabilityScanner();
@@ -94,6 +101,7 @@ public static class AnalyzeCommand
                     VersionIssues = versionIssues,
                     Vulnerabilities = vulnerabilities,
                     Secrets = secretResult.FoundSecrets,
+                    ProjectCompatibilityIssues = projectCompatibilityIssues,
                     Summary = new AuditSummary
                     {
                         TotalProjects = projects.Count,
@@ -121,10 +129,16 @@ public static class AnalyzeCommand
                         console.WriteVulnerabilityTable(vulnerabilities);
                     }
 
-                    if (versionIssues.Any(i => i.IsOutdated))
+                    if (versionIssues.Any(i => i.IsOutdated || !i.IsCompatible || !string.IsNullOrWhiteSpace(i.Suggestion)))
                     {
-                        console.WriteHeader("OUTDATED PACKAGES");
+                        console.WriteHeader("VERSION ISSUES");
                         console.WriteVersionIssuesTable(versionIssues);
+                    }
+
+                    if (projectCompatibilityIssues.Any())
+                    {
+                        console.WriteHeader("PROJECT COMPATIBILITY");
+                        console.WriteProjectCompatibilityTable(projectCompatibilityIssues);
                     }
 
                     if (secretResult.FoundSecrets.Any())
@@ -184,7 +198,10 @@ public static class AnalyzeCommand
                 foreach (var depId in node.DependencyIds)
                 {
                     var depNode = graph.Nodes.FirstOrDefault(n => n.Id == depId);
-                    if (depNode?.Type == DependencyType.NuGet)
+                    if (depNode == null)
+                        continue;
+
+                    if (depNode.Type == DependencyType.NuGet)
                     {
                         project.Packages.Add(new PackageReference
                         {
@@ -195,6 +212,19 @@ public static class AnalyzeCommand
                             IsPrivateAssets = depNode.Metadata.ContainsKey("IsPrivateAssets") && 
                                              (bool)depNode.Metadata["IsPrivateAssets"]
                         });
+                    }
+                    else if (depNode.Type == DependencyType.ProjectReference)
+                    {
+                        var referencePath = depNode.Metadata.TryGetValue("Path", out var refPath) ? refPath?.ToString() ?? string.Empty : string.Empty;
+                        if (!string.IsNullOrWhiteSpace(referencePath))
+                        {
+                            project.ProjectReferences.Add(new ProjectReference
+                            {
+                                Name = depNode.Name,
+                                Path = referencePath,
+                                RelativePath = referencePath
+                            });
+                        }
                     }
                 }
 

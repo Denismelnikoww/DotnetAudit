@@ -22,36 +22,40 @@ public class VersionCompatibilityChecker
         var tasks = project.Packages.Select(p => CheckPackageAsync(p, project)).ToArray();
         var results = await Task.WhenAll(tasks);
 
-        issues.AddRange(results.Where(r => r != null));
+        issues.AddRange(results.OfType<VersionIssue>());
         return issues;
-    }
-
-    public async Task<List<VersionIssue>> CheckPackagesAsync(List<ProjectInfo> projects)
-    {
-        var allIssues = new List<VersionIssue>();
-        var allPackages = projects.SelectMany(p => p.Packages).DistinctBy(p => p.Name).ToList();
-
-        foreach (var package in allPackages)
-        {
-            var issue = await CheckPackageVersionAsync(package);
-            if (issue != null)
-                allIssues.Add(issue);
-        }
-
-        return allIssues;
     }
 
     private async Task<VersionIssue?> CheckPackageAsync(PackageReference package, ProjectInfo project)
     {
         var issue = await CheckPackageVersionAsync(package);
+        var compatibilityIssue = await _frameworkCompatibility.CheckFrameworkCompatibilityAsync(project, package);
 
-        if (issue != null)
+        if (issue == null)
         {
-            var compatibilityIssue = _frameworkCompatibility.CheckFrameworkCompatibility(project, package);
             if (!compatibilityIssue.IsCompatible)
             {
-                issue.Suggestion = compatibilityIssue.Suggestion;
+                issue = new VersionIssue
+                {
+                    PackageName = package.Name,
+                    CurrentVersion = package.Version,
+                    LatestVersion = package.Version,
+                    LatestStableVersion = package.Version,
+                    Difference = VersionDifference.Same,
+                    IsOutdated = false,
+                    HasBreakingChanges = false,
+                    IsCompatible = false,
+                    Suggestion = compatibilityIssue.Suggestion
+                };
             }
+
+            return issue;
+        }
+
+        issue.IsCompatible = compatibilityIssue.IsCompatible;
+        if (!compatibilityIssue.IsCompatible)
+        {
+            issue.Suggestion = compatibilityIssue.Suggestion;
         }
 
         return issue;
@@ -97,43 +101,6 @@ public class VersionCompatibilityChecker
             VersionDifference.Patch => $"Patch update available for {package.Name}: {package.Version} → {latestVersion}",
             _ => $"Update available: {package.Name} {package.Version} → {latestVersion}"
         };
-    }
-
-    public async Task<Dictionary<string, List<string>>> GetUpdateChainsAsync(List<PackageReference> packages)
-    {
-        var updateChains = new Dictionary<string, List<string>>();
-
-        foreach (var package in packages)
-        {
-            var versions = await _versionResolver.GetVersionHistoryAsync(package.Name, 5);
-            if (versions.Any())
-            {
-                updateChains[package.Name] = versions.Select(v => v.ToString()).ToList();
-            }
-        }
-
-        return updateChains;
-    }
-
-    public async Task<PackageUpdateReport> GenerateUpdateReportAsync(ProjectInfo project)
-    {
-        var issues = await CheckPackagesAsync(project);
-
-        var report = new PackageUpdateReport
-        {
-            ProjectName = project.Name,
-            ScanTime = DateTime.UtcNow,
-            TotalPackages = project.Packages.Count,
-            OutdatedPackages = issues.Count(i => i.IsOutdated),
-            MajorUpdates = issues.Count(i => i.Difference == VersionDifference.Major),
-            MinorUpdates = issues.Count(i => i.Difference == VersionDifference.Minor),
-            PatchUpdates = issues.Count(i => i.Difference == VersionDifference.Patch),
-            Issues = issues
-        };
-
-        report.UpdatePriority = CalculatePriority(report);
-
-        return report;
     }
 
     private UpdatePriority CalculatePriority(PackageUpdateReport report)
