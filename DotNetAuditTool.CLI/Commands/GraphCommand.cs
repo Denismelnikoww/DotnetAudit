@@ -4,7 +4,6 @@ using DotNetAuditTool.Core.Models;
 using DotNetAuditTool.DependencyGraphBuilder;
 using Spectre.Console;
 using System.CommandLine;
-using System.IO;
 
 namespace DotNetAuditTool.CLI.Commands;
 

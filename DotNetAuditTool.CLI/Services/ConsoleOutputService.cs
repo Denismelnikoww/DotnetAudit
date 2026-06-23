@@ -224,7 +224,6 @@ public class ConsoleOutputService
         grid.AddRow("[bold]Vulnerabilities:[/]", $"[red]{report.Summary.TotalVulnerabilities}[/]");
         grid.AddRow("[bold]Secrets Found:[/]", $"[yellow]{report.Summary.TotalSecrets}[/]");
         grid.AddRow("[bold]Outdated Packages:[/]", $"[cyan]{report.Summary.OutdatedPackages}[/]");
-        grid.AddRow("[bold]Criticality Score:[/]", GetScoreColor(report.Summary.CriticalityScore));
 
         AnsiConsole.Write(grid);
         AnsiConsole.WriteLine();

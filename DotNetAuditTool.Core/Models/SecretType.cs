@@ -8,8 +8,6 @@ public enum SecretType
     PrivateKey,
     JwtToken,
     AccessToken,
-    ClientSecret,
     AwsKey,
     AzureKey,
-    GenericSecret
 }

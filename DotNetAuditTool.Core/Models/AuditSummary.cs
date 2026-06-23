@@ -9,5 +9,4 @@ public class AuditSummary
     public int OutdatedPackages { get; set; }
     public Dictionary<SeverityLevel, int> VulnerabilitiesBySeverity { get; set; } = new();
     public Dictionary<SecretType, int> SecretsByType { get; set; } = new();
-    public double CriticalityScore { get; set; }
 }

@@ -6,7 +6,7 @@ namespace DotNetAuditTool.Secrets;
 public class FileScanner
 {
     private readonly List<string> _ignorePatterns;
-        private readonly HashSet<string> _ignoreFileNames;
+    private readonly HashSet<string> _ignoreFileNames;
     private readonly List<string> _allowedExtensions;
     private readonly List<string> _ignoreDirectories;
     private readonly double _entropyThreshold;
@@ -174,7 +174,7 @@ public class FileScanner
                 if (IsFalsePositive(secretValue, line, secretType))
                     continue;
 
-                if (entropy < 3.5 && hasRepeatPatterns)
+                if (entropy < _entropyThreshold && hasRepeatPatterns)
                     continue;
 
                 secrets.Add(new SecretMatch

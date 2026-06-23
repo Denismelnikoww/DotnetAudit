@@ -77,40 +77,10 @@ public class DependencyAnalyzer
         path.Pop();
     }
 
-    public Dictionary<string, int> GetDependencyDepth(DependencyGraph graph)
-    {
-        var depths = new Dictionary<string, int>();
-        var roots = graph.GetRootNodes();
-
-        foreach (var root in roots)
-        {
-            CalculateDepth(root.Id, graph, depths, 0);
-        }
-
-        return depths;
-    }
-
-    private void CalculateDepth(string nodeId, DependencyGraph graph, Dictionary<string, int> depths, int currentDepth)
-    {
-        if (!depths.ContainsKey(nodeId) || depths[nodeId] < currentDepth)
-        {
-            depths[nodeId] = currentDepth;
-        }
-
-        if (graph.AdjacencyList.TryGetValue(nodeId, out var neighbors))
-        {
-            foreach (var neighbor in neighbors)
-            {
-                CalculateDepth(neighbor, graph, depths, currentDepth + 1);
-            }
-        }
-    }
-
     public List<ProjectInfo> GetProjectsFromGraph(DependencyGraph graph)
     {
-        // Сначала создаем уникальные ProjectInfo на основе узлов проектов
-        var uniqueProjects = new Dictionary<string, ProjectInfo>(StringComparer.OrdinalIgnoreCase); // Key: FilePath
-        var nodeById = graph.Nodes.ToDictionary(n => n.Id, StringComparer.OrdinalIgnoreCase); // Для быстрого поиска зависимостей по ID
+        var uniqueProjects = new Dictionary<string, ProjectInfo>(StringComparer.OrdinalIgnoreCase);
+        var nodeById = graph.Nodes.ToDictionary(n => n.Id, StringComparer.OrdinalIgnoreCase);
 
         foreach (var node in graph.Nodes.Where(n => n.Type == DependencyType.ProjectReference))
         {
@@ -119,7 +89,6 @@ public class DependencyAnalyzer
                 var filePath = pathObj.ToString();
                 if (!string.IsNullOrWhiteSpace(filePath))
                 {
-                    // Создаем ProjectInfo только если его еще нет
                     if (!uniqueProjects.ContainsKey(filePath))
                     {
                         var project = new ProjectInfo
@@ -129,8 +98,8 @@ public class DependencyAnalyzer
                             TargetFramework = node.Metadata.TryGetValue("TargetFramework", out var tf)
                                 ? tf.ToString() ?? node.Version
                                 : node.Version,
-                            Packages = new List<PackageReference>(),      // Инициализируем списки
-                            ProjectReferences = new List<ProjectReference>() // Инициализируем списки
+                            Packages = new List<PackageReference>(),
+                            ProjectReferences = new List<ProjectReference>()
                         };
                         uniqueProjects[filePath] = project;
                     }
@@ -138,7 +107,6 @@ public class DependencyAnalyzer
             }
         }
 
-        // Теперь обходим все узлы проектов снова, чтобы добавить их зависимости к соответствующему уникальному ProjectInfo
         foreach (var node in graph.Nodes.Where(n => n.Type == DependencyType.ProjectReference))
         {
             if (node.Metadata.TryGetValue("Path", out var pathObj) && pathObj != null)
@@ -152,7 +120,6 @@ public class DependencyAnalyzer
                         {
                             if (depNode.Type == DependencyType.NuGet)
                             {
-                                // Проверяем, нет ли уже такой зависимости (во избежание дублей если в графе были)
                                 var packageRef = new PackageReference
                                 {
                                     Name = depNode.Name,
@@ -172,12 +139,11 @@ public class DependencyAnalyzer
                                 var refPath = depNode.Metadata.TryGetValue("Path", out var refPathObj) ? refPathObj?.ToString() : null;
                                 if (!string.IsNullOrWhiteSpace(refPath))
                                 {
-                                    // Проверяем, нет ли уже такой зависимости (во избежание дублей если в графе были)
                                     var projRef = new ProjectReference
                                     {
                                         Name = depNode.Name,
                                         Path = refPath,
-                                        RelativePath = refPath // Можно вычислить относительный путь, если нужно
+                                        RelativePath = refPath
                                     };
                                     if (!project.ProjectReferences.Any(pr => pr.Path.Equals(projRef.Path, StringComparison.OrdinalIgnoreCase)))
                                     {
@@ -191,7 +157,7 @@ public class DependencyAnalyzer
             }
         }
 
-        return uniqueProjects.Values.ToList(); // Возвращаем список уникальных ProjectInfo
+        return uniqueProjects.Values.ToList();
     }
 
 }

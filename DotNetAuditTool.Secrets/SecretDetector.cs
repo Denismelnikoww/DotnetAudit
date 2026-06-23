@@ -4,20 +4,20 @@ namespace DotNetAuditTool.Secrets;
 
 public class SecretDetector
 {
-    private readonly List<SecretMatch> _foundSecrets;
+    private readonly double _entropyTresold = 3.5;
 
-    public SecretDetector()
+    public SecretDetector(double entropy)
     {
-        _foundSecrets = new List<SecretMatch>();
+        _entropyTresold = entropy;
     }
 
-    public async Task<SecretScanResult> ScanAsync(string targetPath, IEnumerable<string>? ignoreFilePaths = null, double entropyThreshold = 4.5)
+    public async Task<SecretScanResult> ScanAsync(string targetPath, IEnumerable<string>? ignoreFilePaths = null)
     {
         Console.WriteLine($"Starting secret scan on: {targetPath}");
 
         var secrets = new List<SecretMatch>();
 
-        var fileScanner = new FileScanner(ignoreFilePaths, entropyThreshold);
+        var fileScanner = new FileScanner(ignoreFilePaths, _entropyTresold);
 
         if (File.Exists(targetPath))
         {
@@ -81,18 +81,12 @@ public class SecretDetector
             SecretType.Password, SecretType.JwtToken
         };
 
-        var criticalSecrets = secrets.Count(s => highRiskTypes.Contains(s.Type) && s.Entropy > 5.5);
+        var criticalSecrets = secrets.Count(s => highRiskTypes.Contains(s.Type));
 
         if (criticalSecrets > 0)
             return SecretRiskLevel.Critical;
 
-        if (secrets.Count(s => highRiskTypes.Contains(s.Type)) > 0)
-            return SecretRiskLevel.High;
-
-        if (secrets.Count > 5)
-            return SecretRiskLevel.Medium;
-
-        return SecretRiskLevel.Low;
+        return SecretRiskLevel.None;
     }
 
     private string GenerateSummary(SecretScanResult result)
@@ -109,10 +103,6 @@ public class SecretDetector
 
         if (result.RiskLevel == SecretRiskLevel.Critical)
             summary += "\nCRITICAL: Immediate action required! Real credentials may be exposed.";
-        else if (result.RiskLevel == SecretRiskLevel.High)
-            summary += "\nHIGH: Potential security risk detected.";
-        else
-            summary += "\nReview these findings and remove any real secrets from code.";
 
         return summary;
     }

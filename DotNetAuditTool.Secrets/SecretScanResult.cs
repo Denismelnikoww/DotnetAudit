@@ -17,8 +17,5 @@ public class SecretScanResult
 public enum SecretRiskLevel
 {
     None,
-    Low,
-    Medium,
-    High,
     Critical
 }

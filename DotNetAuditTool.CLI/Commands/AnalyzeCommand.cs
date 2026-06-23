@@ -94,10 +94,10 @@ public static class AnalyzeCommand
             console.WriteInfo("Scanning for secrets in code...");
             var configurationService = new ConfigurationService();
             var settings = configurationService.Load();
-            var secretDetector = new SecretDetector();
+            var secretDetector = new SecretDetector(settings.EntropyThreshold);
             var scanTarget = Directory.Exists(path) ? path : Path.GetDirectoryName(path) ?? path;
             var reportFullPath = Path.GetFullPath(output ?? "audit-report.json");
-            var secretResult = await secretDetector.ScanAsync(scanTarget, new[] { reportFullPath }, settings.EntropyThreshold);
+            var secretResult = await secretDetector.ScanAsync(scanTarget, new[] { reportFullPath });
             console.WriteSuccess($"Found {secretResult.FoundSecrets.Count} potential secrets");
 
             var report = new AuditReport
@@ -121,7 +121,6 @@ public static class AnalyzeCommand
                     SecretsByType = secretResult.FoundSecrets
                         .GroupBy(s => s.Type)
                         .ToDictionary(g => g.Key, g => g.Count()),
-                    CriticalityScore = CalculateCriticalityScore(vulnerabilities, secretResult.FoundSecrets)
                 }
             };
 
@@ -180,19 +179,5 @@ public static class AnalyzeCommand
                 console.WriteError(ex.StackTrace ?? "");
             return 1;
         }
-    }
-
-
-    private static double CalculateCriticalityScore(List<Vulnerability> vulnerabilities, List<SecretMatch> secrets)
-    {
-        double score = 0;
-
-        var vulnScore = vulnerabilities.Sum(v => v.CvssScore);
-        score += Math.Min(70, vulnScore);
-
-        var secretScore = Math.Min(30, secrets.Count * 3);
-        score += secretScore;
-
-        return score;
     }
 }
