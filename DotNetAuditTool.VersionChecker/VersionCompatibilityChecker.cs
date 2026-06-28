@@ -6,14 +6,9 @@ namespace DotNetAuditTool.VersionChecker;
 
 public class VersionCompatibilityChecker
 {
-    private readonly NuGetVersionResolver _versionResolver;
-    private readonly FrameworkCompatibility _frameworkCompatibility;
+    private readonly NuGetVersionResolver _versionResolver = new();
+    private readonly FrameworkCompatibility _frameworkCompatibility = new();
 
-    public VersionCompatibilityChecker()
-    {
-        _versionResolver = new NuGetVersionResolver();
-        _frameworkCompatibility = new FrameworkCompatibility();
-    }
 
     public async Task<List<VersionIssue>> CheckPackagesAsync(ProjectInfo project)
     {

@@ -4,12 +4,8 @@ namespace DotNetAuditTool.DependencyGraphBuilder;
 
 public class DependencyAnalyzer
 {
-    private readonly GraphBuilder _graphBuilder;
+    private readonly GraphBuilder _graphBuilder = new();
 
-    public DependencyAnalyzer()
-    {
-        _graphBuilder = new GraphBuilder();
-    }
 
     public async Task<DependencyGraph> AnalyzeAsync(string targetPath)
     {

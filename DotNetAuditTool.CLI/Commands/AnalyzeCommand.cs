@@ -161,7 +161,7 @@ public static class AnalyzeCommand
             }
 
             if (vulnerabilities.Any(v => v.Severity == SeverityLevel.Critical) ||
-                secretResult.RiskLevel == SecretRiskLevel.Critical)
+                secretResult.RiskLevel == SecretRiskLevel.Critical || projectCompatibilityIssues.Any(p => !p.IsCompatible))
             {
                 console.WriteError("Critical issues found! Audit failed.");
                 return 1;

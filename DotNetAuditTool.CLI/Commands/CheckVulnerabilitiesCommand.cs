@@ -63,9 +63,6 @@ public static class CheckVulnerabilitiesCommand
             if (report.LowCount > 0)
                 console.WriteInfo($"  - Low: {report.LowCount}");
 
-            var riskColor = report.RiskScore >= 70 ? "red" : report.RiskScore >= 40 ? "yellow" : "green";
-            console.WriteInfo($"Risk score: [{riskColor}]{report.RiskScore:F1}%[/]");
-
             if (report.CriticalCount > 0)
             {
                 console.WriteError("Critical vulnerabilities found! Immediate action required.");

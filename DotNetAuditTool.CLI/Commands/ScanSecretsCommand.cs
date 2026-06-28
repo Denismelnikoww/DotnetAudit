@@ -49,9 +49,9 @@ public static class ScanSecretsCommand
             var settings = configurationService.Load();
             var threshold = entropyThreshold ?? settings.EntropyThreshold;
 
-            var detector = new SecretDetector();
+            var detector = new SecretDetector(settings.EntropyThreshold);
             var reportFullPath = string.IsNullOrEmpty(output) ? null : Path.GetFullPath(output);
-            var result = await detector.ScanAsync(path, reportFullPath is null ? null : new[] { reportFullPath }, threshold);
+            var result = await detector.ScanAsync(path, reportFullPath is null ? null : new[] { reportFullPath });
 
             console.WriteSecretsTable(result.FoundSecrets);
 
@@ -61,8 +61,6 @@ public static class ScanSecretsCommand
             var riskColor = result.RiskLevel switch
             {
                 SecretRiskLevel.Critical => "red",
-                SecretRiskLevel.High => "orange3",
-                SecretRiskLevel.Medium => "yellow",
                 _ => "green"
             };
             console.WriteInfo($"Risk level: [{riskColor}]{result.RiskLevel}[/]\n");
@@ -92,7 +90,7 @@ public static class ScanSecretsCommand
                 }
             }
 
-            if (result.RiskLevel >= SecretRiskLevel.High)
+            if (result.RiskLevel != SecretRiskLevel.None)
             {
                 return 1;
             }
