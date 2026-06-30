@@ -5,10 +5,6 @@ namespace DotNetAuditTool.Secrets;
 
 public class EntropyAnalyzer
 {
-    public EntropyAnalyzer()
-    {
-    }
-
     /// <summary>
     /// Вычисляет энтропию Шеннона для строки (0-8 bits per char)
     /// Высокая энтропия (> 4.5) может указывать на зашифрованное или случайное значение
@@ -38,35 +34,6 @@ public class EntropyAnalyzer
         }
 
         return entropy;
-    }
-
-    /// <summary>
-    /// Проверяет, является ли значение подозрительным (вероятный секрет)
-    /// </summary>
-    public static bool IsSuspiciousSecret(string value, SecretType type, double entropyThreshold = 4.5)
-    {
-        if (string.IsNullOrEmpty(value))
-            return false;
-
-        if (value.Length < 8)
-            return false;
-
-        if (IsLikelyPathOrUrl(value))
-            return false;
-
-        if (IsAlphanumeric(value) && CalculateShannonEntropy(value) > entropyThreshold)
-            return true;
-
-        if (HasSpecialCharacters(value) && value.Length >= 12)
-            return true;
-
-        return type switch
-        {
-            SecretType.JwtToken => value.Contains('.') && value.Split('.').Length == 3,
-            SecretType.PrivateKey => value.Contains("BEGIN") && value.Contains("PRIVATE KEY"),
-            SecretType.ConnectionString => value.Contains("Server=") || value.Contains("Data Source="),
-            _ => false
-        };
     }
 
     private static bool IsLikelyPathOrUrl(string value)

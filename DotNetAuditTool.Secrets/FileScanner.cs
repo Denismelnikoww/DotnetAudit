@@ -168,13 +168,12 @@ public class FileScanner
                     secretValue = match.Value;
 
                 var entropy = EntropyAnalyzer.CalculateShannonEntropy(secretValue);
-                var isSuspicious = EntropyAnalyzer.IsSuspiciousSecret(secretValue, secretType, _entropyThreshold);
                 var hasRepeatPatterns = EntropyAnalyzer.HasRepeatPatterns(secretValue);
 
                 if (IsFalsePositive(secretValue, line, secretType))
                     continue;
 
-                if (entropy < _entropyThreshold && hasRepeatPatterns)
+                if (entropy < _entropyThreshold || hasRepeatPatterns)
                     continue;
 
                 secrets.Add(new SecretMatch

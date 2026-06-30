@@ -72,18 +72,7 @@ public class SecretDetector
 
     private SecretRiskLevel CalculateRiskLevel(List<SecretMatch> secrets)
     {
-        if (!secrets.Any())
-            return SecretRiskLevel.None;
-
-        var highRiskTypes = new[]
-        {
-            SecretType.PrivateKey, SecretType.AwsKey, SecretType.AccessToken,
-            SecretType.Password, SecretType.JwtToken
-        };
-
-        var criticalSecrets = secrets.Count(s => highRiskTypes.Contains(s.Type));
-
-        if (criticalSecrets > 0)
+        if (secrets.Any())
             return SecretRiskLevel.Critical;
 
         return SecretRiskLevel.None;

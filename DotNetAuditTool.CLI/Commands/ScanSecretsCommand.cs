@@ -21,19 +21,17 @@ public static class ScanSecretsCommand
                 result.ErrorMessage = "Path cannot be empty.";
             }
         });
-        var entropyThresholdOption = new Option<double?>(["--entropy-threshold", "-e"], "Entropy threshold for detection (0-8)");
         var outputOption = new Option<string>(["--output", "-o"], "Output file for results");
 
         command.AddArgument(pathArg);
-        command.AddOption(entropyThresholdOption);
         command.AddOption(outputOption);
 
-        command.SetHandler(ExecuteScanSecretsCommand, pathArg, entropyThresholdOption, outputOption);
+        command.SetHandler(ExecuteScanSecretsCommand, pathArg, outputOption);
 
         return command;
     }
 
-    private static async Task<int> ExecuteScanSecretsCommand(string path, double? entropyThreshold, string? output)
+    private static async Task<int> ExecuteScanSecretsCommand(string path, string? output)
     {
         if (string.IsNullOrWhiteSpace(path))
         {
@@ -47,7 +45,6 @@ public static class ScanSecretsCommand
         {
             var configurationService = new ConfigurationService();
             var settings = configurationService.Load();
-            var threshold = entropyThreshold ?? settings.EntropyThreshold;
 
             var detector = new SecretDetector(settings.EntropyThreshold);
             var reportFullPath = string.IsNullOrEmpty(output) ? null : Path.GetFullPath(output);

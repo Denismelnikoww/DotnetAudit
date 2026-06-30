@@ -24,6 +24,7 @@ public class Program
         rootCommand.AddCommand(CheckVersionsCommand.Create());
         rootCommand.AddCommand(CheckVulnerabilitiesCommand.Create());
         rootCommand.AddCommand(ScanSecretsCommand.Create());
+        rootCommand.AddCommand(ConfigCommand.Create());
 
         var parser = new CommandLineBuilder(rootCommand)
             .UseDefaults()
