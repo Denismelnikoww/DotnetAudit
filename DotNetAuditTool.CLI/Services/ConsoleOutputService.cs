@@ -36,21 +36,6 @@ public class ConsoleOutputService
         AnsiConsole.MarkupLine($"[blue]ℹ[/] {message}");
     }
 
-    public void WriteTable(string title, IEnumerable<(string Label, string Value)> rows)
-    {
-        var table = new Table();
-        table.AddColumn("[cyan]Property[/]");
-        table.AddColumn("[cyan]Value[/]");
-        table.Border = TableBorder.Rounded;
-
-        foreach (var row in rows)
-        {
-            table.AddRow(row.Label, row.Value);
-        }
-
-        AnsiConsole.Write(table);
-    }
-
     public void WriteVulnerabilityTable(List<Vulnerability> vulnerabilities)
     {
         if (!vulnerabilities.Any())

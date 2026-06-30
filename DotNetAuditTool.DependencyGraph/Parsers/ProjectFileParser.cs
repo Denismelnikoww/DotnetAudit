@@ -52,7 +52,7 @@ public class ProjectFileParser
                 {
                     Name = packageNode.Attributes?["Include"]?.Value ?? string.Empty,
                     Version = packageNode.Attributes?["Version"]?.Value ??
-                             packageNode.SelectSingleNode("Version")?.InnerText ?? string.Empty,
+                              packageNode.SelectSingleNode("Version")?.InnerText ?? string.Empty,
                     IsPrivateAssets = packageNode.SelectSingleNode("PrivateAssets")?.InnerText == "true",
                     IsDevelopmentDependency = packageNode.SelectSingleNode("DevelopmentDependency")?.InnerText == "true"
                 };
@@ -72,17 +72,45 @@ public class ProjectFileParser
                 var include = refNode.Attributes?["Include"]?.Value;
                 if (!string.IsNullOrEmpty(include))
                 {
+                    var relativePath = include.Replace('\\', Path.DirectorySeparatorChar)
+                        .Replace('/', Path.DirectorySeparatorChar);
+
                     var projectRef = new ProjectReference
                     {
-                        Name = Path.GetFileNameWithoutExtension(include),
-                        Path = include,
-                        RelativePath = include
+                        Name = Path.GetFileNameWithoutExtension(relativePath),
+                        Path = relativePath,
+                        RelativePath = relativePath
                     };
 
-                    var fullPath = Path.GetFullPath(Path.Combine(projectInfo.DirectoryPath, include));
+                    var fullPath = Path.GetFullPath(Path.Combine(projectInfo.DirectoryPath, relativePath));
+
                     if (File.Exists(fullPath))
                     {
                         projectRef.Path = fullPath;
+                    }
+                    else
+                    {
+                        var dir = Path.GetDirectoryName(fullPath);
+                        var fileName = Path.GetFileName(fullPath);
+                        if (dir != null && Directory.Exists(dir))
+                        {
+                            var found = Directory.GetFiles(dir, fileName, SearchOption.TopDirectoryOnly)
+                                .FirstOrDefault();
+                            if (found != null)
+                            {
+                                projectRef.Path = Path.GetFullPath(found);
+                            }
+                        }
+                        else
+                        {
+                            var found = Directory.GetFiles(projectInfo.DirectoryPath, fileName,
+                                    SearchOption.AllDirectories)
+                                .FirstOrDefault();
+                            if (found != null)
+                            {
+                                projectRef.Path = Path.GetFullPath(found);
+                            }
+                        }
                     }
 
                     projectInfo.ProjectReferences.Add(projectRef);

@@ -98,19 +98,19 @@ public class GraphBuilder
 
             foreach (var projectRef in project.ProjectReferences)
             {
-                var normalizedRefPath = Path.GetFullPath(projectRef.Path).ToLowerInvariant();
-                string? targetKey = null;
-                DependencyNode? refNode = null;
-
-                foreach (var kvp in nodeDict)
+                string refPath;
+                if (Path.IsPathRooted(projectRef.Path))
                 {
-                    if (kvp.Key != null && Path.GetFullPath(kvp.Key).ToLowerInvariant() == normalizedRefPath)
-                    {
-                        targetKey = kvp.Key;
-                        refNode = kvp.Value;
-                        break;
-                    }
+                    refPath = Path.GetFullPath(projectRef.Path);
                 }
+                else
+                {
+                    refPath = Path.GetFullPath(Path.Combine(project.DirectoryPath, projectRef.Path));
+                }
+
+                var refNode = nodeDict.Values.FirstOrDefault(n =>
+                    string.Equals(n.Metadata.GetValueOrDefault("Path")?.ToString(), refPath,
+                        StringComparison.OrdinalIgnoreCase));
 
                 if (refNode != null)
                 {
@@ -127,6 +127,34 @@ public class GraphBuilder
                     if (!graph.AdjacencyList.ContainsKey(projectNode.Id))
                         graph.AdjacencyList[projectNode.Id] = new List<string>();
                     graph.AdjacencyList[projectNode.Id].Add(refNode.Id);
+                }
+                else if (File.Exists(refPath))
+                {
+                    try
+                    {
+                        var missingProject = await _projectFileParser.ParseAsync(refPath);
+                        var missingNode = CreateProjectNode(missingProject, nodeDict);
+                        nodeDict[missingProject.FilePath] = missingNode;
+                        graph.Nodes.Add(missingNode);
+
+                        projectNode.Dependencies.Add(missingNode);
+                        projectNode.DependencyIds.Add(missingNode.Id);
+
+                        var edge = new DependencyEdge
+                        {
+                            Source = projectNode.Id,
+                            Target = missingNode.Id
+                        };
+                        graph.Edges.Add(edge);
+
+                        if (!graph.AdjacencyList.ContainsKey(projectNode.Id))
+                            graph.AdjacencyList[projectNode.Id] = new List<string>();
+                        graph.AdjacencyList[projectNode.Id].Add(missingNode.Id);
+                    }
+                    catch
+                    {
+                        // игнор
+                    }
                 }
             }
         }
