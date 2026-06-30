@@ -80,9 +80,6 @@ public class FrameworkCompatibility
                 issue.Suggestion = $"Package {package.Name} version {package.Version} may have compatibility issues with .NET Core. Consider upgrading.";
                 return issue;
             }
-
-            issue.IsCompatible = true;
-            return issue;
         }
 
         issue.IsCompatible = false;

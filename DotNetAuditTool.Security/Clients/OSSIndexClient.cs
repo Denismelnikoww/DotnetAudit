@@ -110,9 +110,9 @@ public class OSSIndexClient
 
     private string? GetPatchedVersion(OssVulnerability vuln)
     {
-        if (vuln.Title?.Contains("fixed in") == true)
+        if (vuln.Description?.Contains("fixed in") == true)
         {
-            var match = System.Text.RegularExpressions.Regex.Match(vuln.Title, @"fixed in (\d+\.\d+\.\d+)");
+            var match = System.Text.RegularExpressions.Regex.Match(vuln.Description, @"fixed in (\d+\.\d+\.\d+)");
             if (match.Success)
                 return match.Groups[1].Value;
         }

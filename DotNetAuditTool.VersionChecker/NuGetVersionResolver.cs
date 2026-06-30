@@ -2,8 +2,6 @@
 
 using NuGet.Common;
 using NuGet.Configuration;
-using NuGet.Frameworks;
-using NuGet.Protocol;
 using NuGet.Protocol.Core.Types;
 using NuGet.Versioning;
 
@@ -59,24 +57,5 @@ public class NuGetVersionResolver
     public async Task<PackageMetadataResource> GetPackageMetadataResourceAsync()
     {
         return await _repository.GetResourceAsync<PackageMetadataResource>();
-    }
-
-    public async Task<List<NuGetVersion>> GetVersionHistoryAsync(string packageName, int maxVersions = 10)
-    {
-        try
-        {
-            var metadataResource = await _repository.GetResourceAsync<FindPackageByIdResource>();
-            var versions = await metadataResource.GetAllVersionsAsync(
-                packageName,
-                new SourceCacheContext(),
-                _logger,
-                CancellationToken.None);
-
-            return versions.OrderByDescending(v => v).Take(maxVersions).ToList();
-        }
-        catch
-        {
-            return new List<NuGetVersion>();
-        }
     }
 }
